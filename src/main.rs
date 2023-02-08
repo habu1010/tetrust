@@ -1,3 +1,5 @@
+use std::{thread, time};
+
 struct Position {
     x: usize,
     y: usize,
@@ -84,6 +86,9 @@ fn main() {
 
     let mut pos = Position { x: 4, y: 0 };
 
+    // 画面クリア・カーソル非表示
+    println!("\x1b[2J\x1b[H\x1b[?25l");
+
     for _ in 0..5 {
         let mut field_buf = field;
         for y in 0..4 {
@@ -94,6 +99,7 @@ fn main() {
 
         pos.y += 1;
 
+        println!("\x1b[H"); // カーソルを先頭に移動
         for y in 0..22 {
             for x in 0..12 {
                 if field_buf[y][x] == 0 {
@@ -104,5 +110,10 @@ fn main() {
             }
             println!();
         }
+
+        thread::sleep(time::Duration::from_millis(1000));
     }
+
+    // カーソルを表示
+    println!("\x1b[?25h");
 }
