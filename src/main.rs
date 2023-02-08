@@ -50,7 +50,7 @@ fn main() {
             Ok(Key::Left) => {
                 let mut game = game.lock().unwrap();
                 let new_pos = Position {
-                    x: game.pos.x.checked_sub(1).unwrap_or_else(|| game.pos.x),
+                    x: game.pos.x.checked_sub(1).unwrap_or(game.pos.x),
                     y: game.pos.y,
                 };
                 move_mino(&mut game, new_pos);

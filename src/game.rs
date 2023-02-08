@@ -69,8 +69,9 @@ pub fn is_collision(field: &FieldSize, pos: &Position, kind: MinoKind) -> bool {
     false
 }
 
+#[allow(clippy::needless_range_loop)]
 pub fn draw(Game { field, pos, kind }: &Game) {
-    let mut field_buf = field.clone();
+    let mut field_buf = *field;
     for y in 0..4 {
         for x in 0..4 {
             field_buf[y + pos.y][x + pos.x] |= MINOS[*kind as usize][y][x];
