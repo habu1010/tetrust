@@ -3,7 +3,6 @@ mod mino;
 
 use game::*;
 use getch_rs::{Getch, Key};
-use mino::MINOS;
 use std::sync::{Arc, Mutex};
 use std::{thread, time};
 
@@ -27,27 +26,8 @@ fn main() {
             if !is_collision(&game.field, &new_pos, game.kind) {
                 game.pos = new_pos;
             } else {
-                let gx = game.pos.x;
-                let gy = game.pos.y;
-                for y in 0..4 {
-                    for x in 0..4 {
-                        game.field[y + gy][x + gx] |= MINOS[game.kind as usize][y][x];
-                    }
-                }
-                for y in 1..FIELD_HEIGHT - 1 {
-                    let mut can_erase = true;
-                    for x in 0..FIELD_WIDTH {
-                        if game.field[y][x] == 0 {
-                            can_erase = false;
-                            break;
-                        }
-                    }
-                    if can_erase {
-                        for y2 in (2..=y).rev() {
-                            game.field[y2] = game.field[y2 - 1];
-                        }
-                    }
-                }
+                fix_mino(&mut game);
+                erase_line(&mut game.field);
                 game.pos = Position::init();
                 game.kind = rand::random();
             }
@@ -64,9 +44,7 @@ fn main() {
                     x: game.pos.x,
                     y: game.pos.y + 1,
                 };
-                if !is_collision(&game.field, &new_pos, game.kind) {
-                    game.pos = new_pos;
-                }
+                move_mino(&mut game, new_pos);
                 draw(&game);
             }
             Ok(Key::Left) => {
@@ -75,9 +53,7 @@ fn main() {
                     x: game.pos.x.checked_sub(1).unwrap_or_else(|| game.pos.x),
                     y: game.pos.y,
                 };
-                if !is_collision(&game.field, &new_pos, game.kind) {
-                    game.pos = new_pos;
-                }
+                move_mino(&mut game, new_pos);
                 draw(&game);
             }
             Ok(Key::Right) => {
@@ -86,9 +62,7 @@ fn main() {
                     x: game.pos.x + 1,
                     y: game.pos.y,
                 };
-                if !is_collision(&game.field, &new_pos, game.kind) {
-                    game.pos = new_pos;
-                }
+                move_mino(&mut game, new_pos);
                 draw(&game);
             }
             Ok(Key::Char('q')) => {

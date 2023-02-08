@@ -90,3 +90,34 @@ pub fn draw(Game { field, pos, kind }: &Game) {
         println!();
     }
 }
+
+pub fn fix_mino(Game { field, pos, kind }: &mut Game) {
+    for y in 0..4 {
+        for x in 0..4 {
+            field[y + pos.y][x + pos.x] |= MINOS[*kind as usize][y][x];
+        }
+    }
+}
+
+pub fn erase_line(field: &mut FieldSize) {
+    for y in 1..FIELD_HEIGHT - 1 {
+        let mut can_erase = true;
+        for x in 0..FIELD_WIDTH {
+            if field[y][x] == 0 {
+                can_erase = false;
+                break;
+            }
+        }
+        if can_erase {
+            for y2 in (2..=y).rev() {
+                field[y2] = field[y2 - 1];
+            }
+        }
+    }
+}
+
+pub fn move_mino(game: &mut Game, new_pos: Position) {
+    if !is_collision(&game.field, &new_pos, game.kind) {
+        game.pos = new_pos;
+    }
+}
