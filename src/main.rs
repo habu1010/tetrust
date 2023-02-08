@@ -98,6 +98,9 @@ const MINOS: [[[usize; 4]; 4]; 7] = [
 fn is_collision(field: &FieldSize, pos: &Position, kind: MinoKind) -> bool {
     for y in 0..4 {
         for x in 0..4 {
+            if y + pos.y >= FIELD_HEIGHT || x + pos.x >= FIELD_WIDTH {
+                continue;
+            }
             if field[y + pos.y][x + pos.x] == 1 && MINOS[kind as usize][y][x] == 1 {
                 return true;
             }
@@ -214,7 +217,7 @@ fn main() {
                 let field = field.lock().unwrap();
                 let mino = mino.lock().unwrap();
                 let new_pos = Position {
-                    x: pos.x - 1,
+                    x: pos.x.checked_sub(1).unwrap_or_else(|| pos.x),
                     y: pos.y,
                 };
                 if !is_collision(&field, &new_pos, *mino) {
