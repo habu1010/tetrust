@@ -1,6 +1,11 @@
 use getch_rs::{Getch, Key};
 use std::{thread, time};
 
+const FIELD_WIDTH: usize = 12;
+const FIELD_HEIGHT: usize = 22;
+
+type FieldSize = [[usize; FIELD_WIDTH]; FIELD_HEIGHT];
+
 struct Position {
     x: usize,
     y: usize,
@@ -71,7 +76,7 @@ const MINOS: [[[usize; 4]; 4]; 7] = [
     ],
 ];
 
-fn is_collision(field: &[[usize; 12]], pos: &Position, kind: MinoKind) -> bool {
+fn is_collision(field: &FieldSize, pos: &Position, kind: MinoKind) -> bool {
     for y in 0..4 {
         for x in 0..4 {
             if field[y + pos.y][x + pos.x] == 1 && MINOS[kind as usize][y][x] == 1 {
@@ -83,7 +88,7 @@ fn is_collision(field: &[[usize; 12]], pos: &Position, kind: MinoKind) -> bool {
 }
 
 fn main() {
-    let field = [
+    let field: FieldSize = [
         [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
         [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
         [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -131,8 +136,8 @@ fn main() {
         }
 
         println!("\x1b[H"); // カーソルを先頭に移動
-        for y in 0..22 {
-            for x in 0..12 {
+        for y in 0..FIELD_HEIGHT {
+            for x in 0..FIELD_WIDTH {
                 if field_buf[y][x] == 0 {
                     print!(" .");
                 } else {
