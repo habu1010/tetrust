@@ -189,6 +189,20 @@ fn main() {
                         field[y + pos.y][x + pos.x] |= MINOS[*mino as usize][y][x];
                     }
                 }
+                for y in 1..FIELD_HEIGHT - 1 {
+                    let mut can_erase = true;
+                    for x in 0..FIELD_WIDTH {
+                        if field[y][x] == 0 {
+                            can_erase = false;
+                            break;
+                        }
+                    }
+                    if can_erase {
+                        for y2 in (2..=y).rev() {
+                            field[y2] = field[y2 - 1];
+                        }
+                    }
+                }
                 *pos = Position { x: 4, y: 0 };
                 *mino = rand::random();
             }
