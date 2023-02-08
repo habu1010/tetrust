@@ -122,3 +122,25 @@ pub fn move_mino(game: &mut Game, new_pos: Position) {
         game.pos = new_pos;
     }
 }
+
+pub fn spawn_mino(game: &mut Game) -> Result<(), ()> {
+    game.pos = Position::init();
+    game.kind = rand::random();
+    if is_collision(&game.field, &game.pos, game.kind) {
+        Err(())
+    } else {
+        Ok(())
+    }
+}
+
+pub fn game_over(game: &Game) -> ! {
+    draw(game);
+    println!("GAME OVER");
+    quit();
+}
+
+pub fn quit() -> ! {
+    // カーソルを表示
+    println!("\x1b[?25h");
+    std::process::exit(0);
+}

@@ -28,8 +28,9 @@ fn main() {
             } else {
                 fix_mino(&mut game);
                 erase_line(&mut game.field);
-                game.pos = Position::init();
-                game.kind = rand::random();
+                if spawn_mino(&mut game).is_err() {
+                    game_over(&game);
+                }
             }
             draw(&game);
         });
@@ -66,9 +67,7 @@ fn main() {
                 draw(&game);
             }
             Ok(Key::Char('q')) => {
-                // カーソルを表示
-                println!("\x1b[?25h");
-                return;
+                quit();
             }
             _ => (),
         }
