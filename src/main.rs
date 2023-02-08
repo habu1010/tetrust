@@ -1,4 +1,5 @@
 use getch_rs::{Getch, Key};
+use std::sync::{Arc, Mutex};
 use std::{thread, time};
 
 const FIELD_WIDTH: usize = 12;
@@ -110,7 +111,7 @@ fn draw(field: &FieldSize, pos: &Position) {
 }
 
 fn main() {
-    let field: FieldSize = [
+    let field = Arc::new(Mutex::new([
         [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
         [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
         [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -133,60 +134,77 @@ fn main() {
         [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
         [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    ];
-
-    let mut pos = Position { x: 4, y: 0 };
-    let g = Getch::new();
+    ]));
+    let pos = Arc::new(Mutex::new(Position { x: 4, y: 0 }));
 
     // 画面クリア・カーソル非表示
     println!("\x1b[2J\x1b[H\x1b[?25l");
 
+    draw(&field.lock().unwrap(), &pos.lock().unwrap());
+
+    {
+        let pos = Arc::clone(&pos);
+        let field = Arc::clone(&field);
+        let _ = thread::spawn(move || loop {
+            thread::sleep(time::Duration::from_millis(1000));
+            let mut pos = pos.lock().unwrap();
+            let field = field.lock().unwrap();
+            let new_pos = Position {
+                x: pos.x,
+                y: pos.y + 1,
+            };
+            if !is_collision(&field, &new_pos, MinoKind::I) {
+                *pos = new_pos;
+            }
+            draw(&field, &pos);
+        });
+    }
+
+    let g = Getch::new();
     loop {
-        let new_pos = Position {
-            x: pos.x,
-            y: pos.y + 1,
-        };
-        if !is_collision(&field, &new_pos, MinoKind::I) {
-            pos = new_pos;
-        }
-
-        draw(&field, &pos);
-
-        thread::sleep(time::Duration::from_millis(1000));
-
         match g.getch() {
             Ok(Key::Down) => {
+                let mut pos = pos.lock().unwrap();
+                let field = field.lock().unwrap();
                 let new_pos = Position {
                     x: pos.x,
                     y: pos.y + 1,
                 };
                 if !is_collision(&field, &new_pos, MinoKind::I) {
-                    pos = new_pos;
+                    *pos = new_pos;
                 }
+                draw(&field, &pos);
             }
             Ok(Key::Left) => {
+                let mut pos = pos.lock().unwrap();
+                let field = field.lock().unwrap();
                 let new_pos = Position {
                     x: pos.x - 1,
                     y: pos.y,
                 };
                 if !is_collision(&field, &new_pos, MinoKind::I) {
-                    pos = new_pos;
+                    *pos = new_pos;
                 }
+                draw(&field, &pos);
             }
             Ok(Key::Right) => {
+                let mut pos = pos.lock().unwrap();
+                let field = field.lock().unwrap();
                 let new_pos = Position {
                     x: pos.x + 1,
                     y: pos.y,
                 };
                 if !is_collision(&field, &new_pos, MinoKind::I) {
-                    pos = new_pos;
+                    *pos = new_pos;
                 }
+                draw(&field, &pos);
             }
-            Ok(Key::Char('q')) => break,
+            Ok(Key::Char('q')) => {
+                // カーソルを表示
+                println!("\x1b[?25h");
+                return;
+            }
             _ => (),
         }
     }
-
-    // カーソルを表示
-    println!("\x1b[?25h");
 }
