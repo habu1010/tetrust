@@ -70,6 +70,17 @@ const MINOS: [[[usize; 4]; 4]; 7] = [
     ],
 ];
 
+fn is_collision(field: &[[usize; 12]], pos: &Position, kind: MinoKind) -> bool {
+    for y in 0..4 {
+        for x in 0..4 {
+            if field[y + pos.y + 1][x + pos.x] == 1 && MINOS[kind as usize][y][x] == 1 {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 fn main() {
     let field = [
         [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
@@ -101,15 +112,17 @@ fn main() {
     // 画面クリア・カーソル非表示
     println!("\x1b[2J\x1b[H\x1b[?25l");
 
-    for _ in 0..5 {
+    for _ in 0..30 {
+        if !is_collision(&field, &pos, MinoKind::I) {
+            pos.y += 1;
+        }
+
         let mut field_buf = field;
         for y in 0..4 {
             for x in 0..4 {
-                field_buf[y + pos.y + 1][x + pos.x] |= MINOS[MinoKind::I as usize][y][x];
+                field_buf[y + pos.y][x + pos.x] |= MINOS[MinoKind::I as usize][y][x];
             }
         }
-
-        pos.y += 1;
 
         println!("\x1b[H"); // カーソルを先頭に移動
         for y in 0..22 {
