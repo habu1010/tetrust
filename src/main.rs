@@ -74,7 +74,7 @@ const MINOS: [[[usize; 4]; 4]; 7] = [
 fn is_collision(field: &[[usize; 12]], pos: &Position, kind: MinoKind) -> bool {
     for y in 0..4 {
         for x in 0..4 {
-            if field[y + pos.y + 1][x + pos.x] == 1 && MINOS[kind as usize][y][x] == 1 {
+            if field[y + pos.y][x + pos.x] == 1 && MINOS[kind as usize][y][x] == 1 {
                 return true;
             }
         }
@@ -115,8 +115,12 @@ fn main() {
     println!("\x1b[2J\x1b[H\x1b[?25l");
 
     loop {
-        if !is_collision(&field, &pos, MinoKind::I) {
-            pos.y += 1;
+        let new_pos = Position {
+            x: pos.x,
+            y: pos.y + 1,
+        };
+        if !is_collision(&field, &new_pos, MinoKind::I) {
+            pos = new_pos;
         }
 
         let mut field_buf = field;
@@ -141,6 +145,33 @@ fn main() {
         thread::sleep(time::Duration::from_millis(1000));
 
         match g.getch() {
+            Ok(Key::Down) => {
+                let new_pos = Position {
+                    x: pos.x,
+                    y: pos.y + 1,
+                };
+                if !is_collision(&field, &new_pos, MinoKind::I) {
+                    pos = new_pos;
+                }
+            }
+            Ok(Key::Left) => {
+                let new_pos = Position {
+                    x: pos.x - 1,
+                    y: pos.y,
+                };
+                if !is_collision(&field, &new_pos, MinoKind::I) {
+                    pos = new_pos;
+                }
+            }
+            Ok(Key::Right) => {
+                let new_pos = Position {
+                    x: pos.x + 1,
+                    y: pos.y,
+                };
+                if !is_collision(&field, &new_pos, MinoKind::I) {
+                    pos = new_pos;
+                }
+            }
             Ok(Key::Char('q')) => break,
             _ => (),
         }
