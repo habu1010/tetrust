@@ -87,6 +87,28 @@ fn is_collision(field: &FieldSize, pos: &Position, kind: MinoKind) -> bool {
     false
 }
 
+fn draw(field: &FieldSize, pos: &Position) {
+    let mut field_buf = field.clone();
+    for y in 0..4 {
+        for x in 0..4 {
+            field_buf[y + pos.y][x + pos.x] |= MINOS[MinoKind::I as usize][y][x];
+        }
+    }
+
+    println!("\x1b[H");
+    // カーソルを先頭に移動
+    for y in 0..FIELD_HEIGHT {
+        for x in 0..FIELD_WIDTH {
+            if field_buf[y][x] == 0 {
+                print!(" .");
+            } else {
+                print!("[]");
+            }
+        }
+        println!();
+    }
+}
+
 fn main() {
     let field: FieldSize = [
         [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
@@ -128,24 +150,7 @@ fn main() {
             pos = new_pos;
         }
 
-        let mut field_buf = field;
-        for y in 0..4 {
-            for x in 0..4 {
-                field_buf[y + pos.y][x + pos.x] |= MINOS[MinoKind::I as usize][y][x];
-            }
-        }
-
-        println!("\x1b[H"); // カーソルを先頭に移動
-        for y in 0..FIELD_HEIGHT {
-            for x in 0..FIELD_WIDTH {
-                if field_buf[y][x] == 0 {
-                    print!(" .");
-                } else {
-                    print!("[]");
-                }
-            }
-            println!();
-        }
+        draw(&field, &pos);
 
         thread::sleep(time::Duration::from_millis(1000));
 
