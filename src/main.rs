@@ -1,3 +1,4 @@
+use getch_rs::{Getch, Key};
 use std::{thread, time};
 
 struct Position {
@@ -108,11 +109,12 @@ fn main() {
     ];
 
     let mut pos = Position { x: 4, y: 0 };
+    let g = Getch::new();
 
     // 画面クリア・カーソル非表示
     println!("\x1b[2J\x1b[H\x1b[?25l");
 
-    for _ in 0..30 {
+    loop {
         if !is_collision(&field, &pos, MinoKind::I) {
             pos.y += 1;
         }
@@ -137,6 +139,11 @@ fn main() {
         }
 
         thread::sleep(time::Duration::from_millis(1000));
+
+        match g.getch() {
+            Ok(Key::Char('q')) => break,
+            _ => (),
+        }
     }
 
     // カーソルを表示
