@@ -1,3 +1,8 @@
+struct Position {
+    x: usize,
+    y: usize,
+}
+
 fn main() {
     // テトリミノ
     let minos = [
@@ -77,27 +82,27 @@ fn main() {
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     ];
 
-    let mut field_buf = field;
-    for y in 0..4 {
-        for x in 0..4 {
-            field_buf[y + 2][x + 2] |= minos[0][y][x];
-            field_buf[y + 2][x + 7] |= minos[1][y][x];
-            field_buf[y + 6][x + 2] |= minos[2][y][x];
-            field_buf[y + 6][x + 7] |= minos[3][y][x];
-            field_buf[y + 10][x + 2] |= minos[4][y][x];
-            field_buf[y + 10][x + 7] |= minos[5][y][x];
-            field_buf[y + 14][x + 2] |= minos[6][y][x];
-        }
-    }
+    let mut pos = Position { x: 4, y: 0 };
 
-    for y in 0..22 {
-        for x in 0..12 {
-            if field_buf[y][x] == 0 {
-                print!(" .");
-            } else {
-                print!("[]");
+    for _ in 0..5 {
+        let mut field_buf = field;
+        for y in 0..4 {
+            for x in 0..4 {
+                field_buf[y + pos.y + 1][x + pos.x] |= minos[0][y][x];
             }
         }
-        println!();
+
+        pos.y += 1;
+
+        for y in 0..22 {
+            for x in 0..12 {
+                if field_buf[y][x] == 0 {
+                    print!(" .");
+                } else {
+                    print!("[]");
+                }
+            }
+            println!();
+        }
     }
 }
