@@ -29,8 +29,10 @@ impl Distribution<MinoKind> for Standard {
     }
 }
 
+pub type MinoShape = [[usize; 4]; 4];
+
 // テトリミノの形状
-pub const MINOS: [[[usize; 4]; 4]; 7] = [
+pub const MINOS: [MinoShape; 7] = [
     [
         // I
         [0, 0, 0, 0],

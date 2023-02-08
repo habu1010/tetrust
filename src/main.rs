@@ -23,7 +23,7 @@ fn main() {
                 x: game.pos.x,
                 y: game.pos.y + 1,
             };
-            if !is_collision(&game.field, &new_pos, game.kind) {
+            if !is_collision(&game.field, &new_pos, &game.mino) {
                 game.pos = new_pos;
             } else {
                 fix_mino(&mut game);
