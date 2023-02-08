@@ -148,13 +148,20 @@ fn main() {
         let _ = thread::spawn(move || loop {
             thread::sleep(time::Duration::from_millis(1000));
             let mut pos = pos.lock().unwrap();
-            let field = field.lock().unwrap();
+            let mut field = field.lock().unwrap();
             let new_pos = Position {
                 x: pos.x,
                 y: pos.y + 1,
             };
             if !is_collision(&field, &new_pos, MinoKind::I) {
                 *pos = new_pos;
+            } else {
+                for y in 0..4 {
+                    for x in 0..4 {
+                        field[y + pos.y][x + pos.x] |= MINOS[MinoKind::I as usize][y][x];
+                    }
+                }
+                *pos = Position { x: 4, y: 0 };
             }
             draw(&field, &pos);
         });
