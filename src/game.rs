@@ -59,7 +59,7 @@ pub fn is_collision(field: &FieldSize, pos: &Position, block: &BlockShape) -> bo
     for y in 0..4 {
         for x in 0..4 {
             if y + pos.y >= FIELD_HEIGHT || x + pos.x >= FIELD_WIDTH {
-                continue;
+                return true;
             }
             if field[y + pos.y][x + pos.x] == 1 && block[y][x] == 1 {
                 return true;
