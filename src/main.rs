@@ -66,6 +66,16 @@ fn main() {
                 move_block(&mut game, new_pos);
                 draw(&game);
             }
+            Ok(Key::Char('z')) => {
+                let mut game = game.lock().unwrap();
+                rotate_left(&mut game);
+                draw(&game);
+            }
+            Ok(Key::Char('x')) => {
+                let mut game = game.lock().unwrap();
+                rotate_right(&mut game);
+                draw(&game);
+            }
             Ok(Key::Char('q')) => {
                 quit();
             }
