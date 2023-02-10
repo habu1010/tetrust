@@ -1,5 +1,6 @@
-use crate::block::{block_kind, block_kind::WALL as W, BlockColor, COLOR_TABLE};
-use crate::block::{BlockKind, BlockShape, BLOCKS};
+use crate::block::{
+    block_kind, block_kind::WALL as W, gen_block_7, BlockColor, BlockShape, COLOR_TABLE,
+};
 use std::collections::VecDeque;
 
 pub const FIELD_WIDTH: usize = 10 + 2 + 2; // フィールド横幅+壁+番兵
@@ -32,7 +33,7 @@ pub struct Game {
 
 impl Game {
     pub fn new() -> Game {
-        Game {
+        let mut game = Game {
             field: [
                 [0, W, W, W, 0, 0, 0, 0, 0, 0, W, W, W, 0],
                 [0, W, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, W, 0],
@@ -59,17 +60,13 @@ impl Game {
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             ],
             pos: Position::init(),
-            block: BLOCKS[rand::random::<BlockKind>() as usize],
+            block: Default::default(),
             hold: None,
             held: false,
-            next_blocks: {
-                let mut deque = VecDeque::new();
-                for _ in 0..NEXT_BLOCKS_SIZE {
-                    deque.push_back(BLOCKS[rand::random::<BlockKind>() as usize]);
-                }
-                deque
-            },
-        }
+            next_blocks: gen_block_7().into(),
+        };
+        spawn_block(&mut game).ok();
+        game
     }
 }
 
@@ -142,7 +139,7 @@ pub fn draw(
     }
 
     println!("\x1b[8;28HNEXT");
-    for (i, block) in next_blocks.iter().enumerate() {
+    for (i, block) in next_blocks.iter().take(NEXT_BLOCKS_SIZE).enumerate() {
         for y in 0..4 {
             print!("\x1b[{};28H", i * 4 + y + 9);
             for x in 0..4 {
@@ -292,8 +289,10 @@ pub fn landing(game: &mut Game) -> Result<(), ()> {
 pub fn spawn_block(game: &mut Game) -> Result<(), ()> {
     game.pos = Position::init();
     game.block = game.next_blocks.pop_front().unwrap();
-    game.next_blocks
-        .push_back(BLOCKS[rand::random::<BlockKind>() as usize]);
+    if game.next_blocks.len() < NEXT_BLOCKS_SIZE {
+        let mut next7: VecDeque<_> = gen_block_7().into();
+        game.next_blocks.append(&mut next7);
+    }
     if is_collision(&game.field, &game.pos, &game.block) {
         Err(())
     } else {

@@ -1,6 +1,7 @@
 use rand::{
     distributions::{Distribution, Standard},
-    Rng,
+    seq::SliceRandom,
+    thread_rng, Rng,
 };
 
 use block_kind::{I, J, L, O, S, T, Z};
@@ -34,6 +35,7 @@ pub const COLOR_TABLE: [&str; 10] = [
 ];
 
 // テトリミノの種類
+const BLOCK_KIND_MAX: usize = 7;
 #[derive(Clone, Copy)]
 pub enum BlockKind {
     I,
@@ -62,7 +64,7 @@ impl Distribution<BlockKind> for Standard {
 pub type BlockShape = [[usize; 4]; 4];
 
 // テトリミノの形状
-pub const BLOCKS: [BlockShape; 7] = [
+pub const BLOCKS: [BlockShape; BLOCK_KIND_MAX] = [
     [
         // I
         [0, 0, 0, 0],
@@ -113,3 +115,18 @@ pub const BLOCKS: [BlockShape; 7] = [
         [0, 0, 0, 0],
     ],
 ];
+
+pub fn gen_block_7() -> [BlockShape; BLOCK_KIND_MAX] {
+    let mut rng = thread_rng();
+    let mut blocks = [
+        BlockKind::I,
+        BlockKind::O,
+        BlockKind::S,
+        BlockKind::Z,
+        BlockKind::J,
+        BlockKind::L,
+        BlockKind::T,
+    ];
+    blocks.shuffle(&mut rng);
+    blocks.map(|block| BLOCKS[block as usize])
+}
