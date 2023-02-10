@@ -1,8 +1,11 @@
 use crate::block::{block_kind, block_kind::WALL as W, BlockColor, COLOR_TABLE};
 use crate::block::{BlockKind, BlockShape, BLOCKS};
+use std::collections::VecDeque;
 
 pub const FIELD_WIDTH: usize = 10 + 2 + 2; // フィールド横幅+壁+番兵
 pub const FIELD_HEIGHT: usize = 20 + 1 + 1 + 1; // フィールド縦幅+床+天井+番兵
+
+pub const NEXT_BLOCKS_SIZE: usize = 3;
 
 pub type FieldSize = [[BlockColor; FIELD_WIDTH]; FIELD_HEIGHT];
 
@@ -24,6 +27,7 @@ pub struct Game {
     pub block: BlockShape,
     pub hold: Option<BlockShape>,
     pub held: bool,
+    pub next_blocks: VecDeque<BlockShape>,
 }
 
 impl Game {
@@ -58,6 +62,13 @@ impl Game {
             block: BLOCKS[rand::random::<BlockKind>() as usize],
             hold: None,
             held: false,
+            next_blocks: {
+                let mut deque = VecDeque::new();
+                for _ in 0..NEXT_BLOCKS_SIZE {
+                    deque.push_back(BLOCKS[rand::random::<BlockKind>() as usize]);
+                }
+                deque
+            },
         }
     }
 }
@@ -97,7 +108,8 @@ pub fn draw(
         pos,
         block,
         hold,
-        ..
+        held: _,
+        next_blocks,
     }: &Game,
 ) {
     let mut field_buf = *field;
@@ -125,6 +137,16 @@ pub fn draw(
             print!("\x1b[{};28H", y + 3);
             for x in 0..4 {
                 print!("{}", COLOR_TABLE[hold[y][x]]);
+            }
+        }
+    }
+
+    println!("\x1b[8;28HNEXT");
+    for (i, block) in next_blocks.iter().enumerate() {
+        for y in 0..4 {
+            print!("\x1b[{};28H", i * 4 + y + 9);
+            for x in 0..4 {
+                print!("{}", COLOR_TABLE[block[y][x]]);
             }
         }
     }
@@ -269,7 +291,9 @@ pub fn landing(game: &mut Game) -> Result<(), ()> {
 
 pub fn spawn_block(game: &mut Game) -> Result<(), ()> {
     game.pos = Position::init();
-    game.block = BLOCKS[rand::random::<BlockKind>() as usize];
+    game.block = game.next_blocks.pop_front().unwrap();
+    game.next_blocks
+        .push_back(BLOCKS[rand::random::<BlockKind>() as usize]);
     if is_collision(&game.field, &game.pos, &game.block) {
         Err(())
     } else {
