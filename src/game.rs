@@ -22,6 +22,8 @@ pub struct Game {
     pub field: FieldSize,
     pub pos: Position,
     pub block: BlockShape,
+    pub hold: Option<BlockShape>,
+    pub held: bool,
 }
 
 impl Game {
@@ -54,6 +56,8 @@ impl Game {
             ],
             pos: Position::init(),
             block: BLOCKS[rand::random::<BlockKind>() as usize],
+            hold: None,
+            held: false,
         }
     }
 }
@@ -87,7 +91,15 @@ pub fn hard_drop_pos(field: &FieldSize, pos: &Position, block: &BlockShape) -> P
 }
 
 #[allow(clippy::needless_range_loop)]
-pub fn draw(Game { field, pos, block }: &Game) {
+pub fn draw(
+    Game {
+        field,
+        pos,
+        block,
+        hold,
+        ..
+    }: &Game,
+) {
     let mut field_buf = *field;
 
     let ghost_pos = hard_drop_pos(field, pos, block);
@@ -107,6 +119,16 @@ pub fn draw(Game { field, pos, block }: &Game) {
         }
     }
 
+    println!("\x1b[2;28HHOLD");
+    if let Some(hold) = hold {
+        for y in 0..4 {
+            print!("\x1b[{};28H", y + 3);
+            for x in 0..4 {
+                print!("{}", COLOR_TABLE[hold[y][x]]);
+            }
+        }
+    }
+
     println!("\x1b[H");
     // カーソルを先頭に移動
     for y in 0..FIELD_HEIGHT - 1 {
@@ -115,9 +137,16 @@ pub fn draw(Game { field, pos, block }: &Game) {
         }
         println!();
     }
+
+    // 色情報をリセット
+    println!("\x1b[0m");
 }
 
-pub fn fix_block(Game { field, pos, block }: &mut Game) {
+pub fn fix_block(
+    Game {
+        field, pos, block, ..
+    }: &mut Game,
+) {
     for y in 0..4 {
         for x in 0..4 {
             field[y + pos.y][x + pos.x] |= block[y][x];
@@ -214,10 +243,27 @@ pub fn hard_drop(game: &mut Game) {
     move_block(game, pos);
 }
 
+pub fn hold(game: &mut Game) {
+    if game.held {
+        return;
+    }
+    if let Some(mut hold) = game.hold {
+        std::mem::swap(&mut hold, &mut game.block);
+        game.hold = Some(hold);
+        game.pos = Position::init();
+    } else {
+        game.hold = Some(game.block);
+        spawn_block(game).ok();
+    }
+
+    game.held = true;
+}
+
 pub fn landing(game: &mut Game) -> Result<(), ()> {
     fix_block(game);
     erase_line(&mut game.field);
     spawn_block(game)?;
+    game.held = false;
     Ok(())
 }
 

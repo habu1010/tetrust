@@ -80,6 +80,11 @@ fn main() {
                 rotate_right(&mut game);
                 draw(&game);
             }
+            Ok(Key::Char(' ')) => {
+                let mut game = game.lock().unwrap();
+                hold(&mut game);
+                draw(&game);
+            }
             Ok(Key::Char('q')) => {
                 quit();
             }
