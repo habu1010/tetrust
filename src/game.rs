@@ -20,7 +20,7 @@ pub struct Position {
 
 impl Position {
     pub fn init() -> Position {
-        Position { x: 5, y: 0 }
+        Position { x: 5, y: 1 }
     }
 }
 
