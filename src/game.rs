@@ -8,6 +8,8 @@ pub const FIELD_HEIGHT: usize = 20 + 1 + 1 + 1; // フィールド縦幅+床+天
 
 pub const NEXT_BLOCKS_SIZE: usize = 3;
 
+pub const SCORE_TABLE: [usize; 5] = [0, 1, 5, 25, 100];
+
 pub type FieldSize = [[BlockColor; FIELD_WIDTH]; FIELD_HEIGHT];
 
 #[derive(Clone, Copy)]
@@ -29,6 +31,7 @@ pub struct Game {
     pub hold: Option<BlockShape>,
     pub held: bool,
     pub next_blocks: VecDeque<BlockShape>,
+    pub score: usize,
 }
 
 impl Game {
@@ -64,6 +67,7 @@ impl Game {
             hold: None,
             held: false,
             next_blocks: gen_block_7().into(),
+            score: 0,
         };
         spawn_block(&mut game).ok();
         game
@@ -107,6 +111,7 @@ pub fn draw(
         hold,
         held: _,
         next_blocks,
+        score,
     }: &Game,
 ) {
     let mut field_buf = *field;
@@ -127,6 +132,10 @@ pub fn draw(
             }
         }
     }
+
+    print!("\x1b[7;1H");
+    print!("SCORE");
+    print!("\x1b[8;1H{:>8}", score);
 
     print!("\x1b[1;1H");
     print!("HOLD");
@@ -173,7 +182,8 @@ pub fn fix_block(
     }
 }
 
-pub fn erase_line(field: &mut FieldSize) {
+pub fn erase_line(field: &mut FieldSize) -> usize {
+    let mut count = 0;
     for y in 1..FIELD_HEIGHT - 2 {
         let mut can_erase = true;
         for x in 2..FIELD_WIDTH - 2 {
@@ -183,11 +193,13 @@ pub fn erase_line(field: &mut FieldSize) {
             }
         }
         if can_erase {
+            count += 1;
             for y2 in (2..=y).rev() {
                 field[y2] = field[y2 - 1];
             }
         }
     }
+    count
 }
 
 pub fn super_rotation(
@@ -280,7 +292,8 @@ pub fn hold(game: &mut Game) {
 
 pub fn landing(game: &mut Game) -> Result<(), ()> {
     fix_block(game);
-    erase_line(&mut game.field);
+    let count = erase_line(&mut game.field);
+    game.score += SCORE_TABLE[count];
     spawn_block(game)?;
     game.held = false;
     Ok(())
