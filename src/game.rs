@@ -128,33 +128,33 @@ pub fn draw(
         }
     }
 
-    println!("\x1b[2;28HHOLD");
+    print!("\x1b[1;1H");
+    print!("HOLD");
     if let Some(hold) = hold {
         for y in 0..4 {
-            print!("\x1b[{};28H", y + 3);
+            print!("\x1b[{};1H", y + 2);
             for x in 0..4 {
                 print!("{}", COLOR_TABLE[hold[y][x]]);
             }
         }
     }
 
-    println!("\x1b[8;28HNEXT");
+    print!("\x1b[1;37H");
+    print!("NEXT");
     for (i, block) in next_blocks.iter().take(NEXT_BLOCKS_SIZE).enumerate() {
         for y in 0..4 {
-            print!("\x1b[{};28H", i * 4 + y + 9);
+            print!("\x1b[{};37H", i * 4 + y + 2);
             for x in 0..4 {
                 print!("{}", COLOR_TABLE[block[y][x]]);
             }
         }
     }
 
-    println!("\x1b[H");
-    // カーソルを先頭に移動
     for y in 0..FIELD_HEIGHT - 1 {
+        print!("\x1b[{};11H", y + 1);
         for x in 1..FIELD_WIDTH - 1 {
             print!("{}", COLOR_TABLE[field_buf[y][x]]);
         }
-        println!();
     }
 
     // 色情報をリセット
