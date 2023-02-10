@@ -6,6 +6,7 @@ pub const FIELD_HEIGHT: usize = 20 + 1 + 1 + 1; // フィールド縦幅+床+天
 
 pub type FieldSize = [[BlockColor; FIELD_WIDTH]; FIELD_HEIGHT];
 
+#[derive(Clone, Copy)]
 pub struct Position {
     pub x: usize,
     pub y: usize,
@@ -145,6 +146,27 @@ pub fn move_block(game: &mut Game, new_pos: Position) {
     if !is_collision(&game.field, &new_pos, &game.block) {
         game.pos = new_pos;
     }
+}
+
+pub fn hard_drop(game: &mut Game) {
+    while {
+        let new_pos = Position {
+            x: game.pos.x,
+            y: game.pos.y + 1,
+        };
+        !is_collision(&game.field, &new_pos, &game.block)
+    } {
+        game.pos.y += 1;
+    }
+    let new_pos = game.pos;
+    move_block(game, new_pos);
+}
+
+pub fn landing(game: &mut Game) -> Result<(), ()> {
+    fix_block(game);
+    erase_line(&mut game.field);
+    spawn_block(game)?;
+    Ok(())
 }
 
 pub fn spawn_block(game: &mut Game) -> Result<(), ()> {

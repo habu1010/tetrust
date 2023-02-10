@@ -25,12 +25,8 @@ fn main() {
             };
             if !is_collision(&game.field, &new_pos, &game.block) {
                 game.pos = new_pos;
-            } else {
-                fix_block(&mut game);
-                erase_line(&mut game.field);
-                if spawn_block(&mut game).is_err() {
-                    game_over(&game);
-                }
+            } else if landing(&mut game).is_err() {
+                game_over(&game);
             }
             draw(&game);
         });
@@ -64,6 +60,14 @@ fn main() {
                     y: game.pos.y,
                 };
                 move_block(&mut game, new_pos);
+                draw(&game);
+            }
+            Ok(Key::Up) => {
+                let mut game = game.lock().unwrap();
+                hard_drop(&mut game);
+                if landing(&mut game).is_err() {
+                    game_over(&game);
+                }
                 draw(&game);
             }
             Ok(Key::Char('z')) => {
