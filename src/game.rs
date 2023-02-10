@@ -142,6 +142,37 @@ pub fn erase_line(field: &mut FieldSize) {
     }
 }
 
+pub fn super_rotation(
+    field: &FieldSize,
+    pos: &Position,
+    block: &BlockShape,
+) -> Result<Position, ()> {
+    let diff_pos_list = [
+        Position {
+            x: pos.x,
+            y: pos.y.checked_sub(1).unwrap_or(pos.y),
+        },
+        Position {
+            x: pos.x + 1,
+            y: pos.y,
+        },
+        Position {
+            x: pos.x,
+            y: pos.y + 1,
+        },
+        Position {
+            x: pos.x.checked_sub(1).unwrap_or(pos.x),
+            y: pos.y,
+        },
+    ];
+    for diff_pos in diff_pos_list {
+        if !is_collision(field, &diff_pos, block) {
+            return Ok(diff_pos);
+        }
+    }
+    Err(())
+}
+
 pub fn rotate_left(game: &mut Game) {
     let mut new_shape: BlockShape = Default::default();
     for y in 0..4 {
@@ -150,6 +181,9 @@ pub fn rotate_left(game: &mut Game) {
         }
     }
     if !is_collision(&game.field, &game.pos, &new_shape) {
+        game.block = new_shape;
+    } else if let Ok(new_pos) = super_rotation(&game.field, &game.pos, &new_shape) {
+        game.pos = new_pos;
         game.block = new_shape;
     }
 }
@@ -162,6 +196,9 @@ pub fn rotate_right(game: &mut Game) {
         }
     }
     if !is_collision(&game.field, &game.pos, &new_shape) {
+        game.block = new_shape;
+    } else if let Ok(new_pos) = super_rotation(&game.field, &game.pos, &new_shape) {
+        game.pos = new_pos;
         game.block = new_shape;
     }
 }
