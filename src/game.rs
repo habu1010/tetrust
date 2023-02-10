@@ -1,4 +1,4 @@
-use crate::mino::{MinoKind, MinoShape, MINOS};
+use crate::block::{BlockKind, BlockShape, BLOCKS};
 
 pub const FIELD_WIDTH: usize = 12;
 pub const FIELD_HEIGHT: usize = 22;
@@ -19,7 +19,7 @@ impl Position {
 pub struct Game {
     pub field: FieldSize,
     pub pos: Position,
-    pub mino: MinoShape,
+    pub block: BlockShape,
 }
 
 impl Game {
@@ -50,18 +50,18 @@ impl Game {
                 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             ],
             pos: Position::init(),
-            mino: MINOS[rand::random::<MinoKind>() as usize],
+            block: BLOCKS[rand::random::<BlockKind>() as usize],
         }
     }
 }
 
-pub fn is_collision(field: &FieldSize, pos: &Position, mino: &MinoShape) -> bool {
+pub fn is_collision(field: &FieldSize, pos: &Position, block: &BlockShape) -> bool {
     for y in 0..4 {
         for x in 0..4 {
             if y + pos.y >= FIELD_HEIGHT || x + pos.x >= FIELD_WIDTH {
                 continue;
             }
-            if field[y + pos.y][x + pos.x] == 1 && mino[y][x] == 1 {
+            if field[y + pos.y][x + pos.x] == 1 && block[y][x] == 1 {
                 return true;
             }
         }
@@ -70,11 +70,11 @@ pub fn is_collision(field: &FieldSize, pos: &Position, mino: &MinoShape) -> bool
 }
 
 #[allow(clippy::needless_range_loop)]
-pub fn draw(Game { field, pos, mino }: &Game) {
+pub fn draw(Game { field, pos, block }: &Game) {
     let mut field_buf = *field;
     for y in 0..4 {
         for x in 0..4 {
-            field_buf[y + pos.y][x + pos.x] |= mino[y][x];
+            field_buf[y + pos.y][x + pos.x] |= block[y][x];
         }
     }
 
@@ -92,10 +92,10 @@ pub fn draw(Game { field, pos, mino }: &Game) {
     }
 }
 
-pub fn fix_mino(Game { field, pos, mino }: &mut Game) {
+pub fn fix_block(Game { field, pos, block }: &mut Game) {
     for y in 0..4 {
         for x in 0..4 {
-            field[y + pos.y][x + pos.x] |= mino[y][x];
+            field[y + pos.y][x + pos.x] |= block[y][x];
         }
     }
 }
@@ -117,16 +117,16 @@ pub fn erase_line(field: &mut FieldSize) {
     }
 }
 
-pub fn move_mino(game: &mut Game, new_pos: Position) {
-    if !is_collision(&game.field, &new_pos, &game.mino) {
+pub fn move_block(game: &mut Game, new_pos: Position) {
+    if !is_collision(&game.field, &new_pos, &game.block) {
         game.pos = new_pos;
     }
 }
 
-pub fn spawn_mino(game: &mut Game) -> Result<(), ()> {
+pub fn spawn_block(game: &mut Game) -> Result<(), ()> {
     game.pos = Position::init();
-    game.mino = MINOS[rand::random::<MinoKind>() as usize];
-    if is_collision(&game.field, &game.pos, &game.mino) {
+    game.block = BLOCKS[rand::random::<BlockKind>() as usize];
+    if is_collision(&game.field, &game.pos, &game.block) {
         Err(())
     } else {
         Ok(())

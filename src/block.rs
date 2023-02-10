@@ -5,7 +5,7 @@ use rand::{
 
 // テトリミノの種類
 #[derive(Clone, Copy)]
-pub enum MinoKind {
+pub enum BlockKind {
     I,
     O,
     S,
@@ -15,24 +15,24 @@ pub enum MinoKind {
     T,
 }
 
-impl Distribution<MinoKind> for Standard {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> MinoKind {
+impl Distribution<BlockKind> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> BlockKind {
         match rng.gen_range(0..=6) {
-            0 => MinoKind::I,
-            1 => MinoKind::O,
-            2 => MinoKind::S,
-            3 => MinoKind::Z,
-            4 => MinoKind::J,
-            5 => MinoKind::L,
-            _ => MinoKind::T,
+            0 => BlockKind::I,
+            1 => BlockKind::O,
+            2 => BlockKind::S,
+            3 => BlockKind::Z,
+            4 => BlockKind::J,
+            5 => BlockKind::L,
+            _ => BlockKind::T,
         }
     }
 }
 
-pub type MinoShape = [[usize; 4]; 4];
+pub type BlockShape = [[usize; 4]; 4];
 
 // テトリミノの形状
-pub const MINOS: [MinoShape; 7] = [
+pub const BLOCKS: [BlockShape; 7] = [
     [
         // I
         [0, 0, 0, 0],

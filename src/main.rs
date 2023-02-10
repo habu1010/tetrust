@@ -1,5 +1,5 @@
+mod block;
 mod game;
-mod mino;
 
 use game::*;
 use getch_rs::{Getch, Key};
@@ -23,12 +23,12 @@ fn main() {
                 x: game.pos.x,
                 y: game.pos.y + 1,
             };
-            if !is_collision(&game.field, &new_pos, &game.mino) {
+            if !is_collision(&game.field, &new_pos, &game.block) {
                 game.pos = new_pos;
             } else {
-                fix_mino(&mut game);
+                fix_block(&mut game);
                 erase_line(&mut game.field);
-                if spawn_mino(&mut game).is_err() {
+                if spawn_block(&mut game).is_err() {
                     game_over(&game);
                 }
             }
@@ -45,7 +45,7 @@ fn main() {
                     x: game.pos.x,
                     y: game.pos.y + 1,
                 };
-                move_mino(&mut game, new_pos);
+                move_block(&mut game, new_pos);
                 draw(&game);
             }
             Ok(Key::Left) => {
@@ -54,7 +54,7 @@ fn main() {
                     x: game.pos.x.checked_sub(1).unwrap_or(game.pos.x),
                     y: game.pos.y,
                 };
-                move_mino(&mut game, new_pos);
+                move_block(&mut game, new_pos);
                 draw(&game);
             }
             Ok(Key::Right) => {
@@ -63,7 +63,7 @@ fn main() {
                     x: game.pos.x + 1,
                     y: game.pos.y,
                 };
-                move_mino(&mut game, new_pos);
+                move_block(&mut game, new_pos);
                 draw(&game);
             }
             Ok(Key::Char('q')) => {
