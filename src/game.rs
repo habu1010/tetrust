@@ -72,9 +72,33 @@ pub fn is_collision(field: &FieldSize, pos: &Position, block: &BlockShape) -> bo
     false
 }
 
+pub fn hard_drop_pos(field: &FieldSize, pos: &Position, block: &BlockShape) -> Position {
+    let mut pos = *pos;
+    while {
+        let new_pos = Position {
+            x: pos.x,
+            y: pos.y + 1,
+        };
+        !is_collision(field, &new_pos, block)
+    } {
+        pos.y += 1;
+    }
+    pos
+}
+
 #[allow(clippy::needless_range_loop)]
 pub fn draw(Game { field, pos, block }: &Game) {
     let mut field_buf = *field;
+
+    let ghost_pos = hard_drop_pos(field, pos, block);
+    for y in 0..4 {
+        for x in 0..4 {
+            if block[y][x] != block_kind::NONE {
+                field_buf[y + ghost_pos.y][x + ghost_pos.x] = block_kind::GHOST;
+            }
+        }
+    }
+
     for y in 0..4 {
         for x in 0..4 {
             if block[y][x] != block_kind::NONE {
@@ -149,17 +173,8 @@ pub fn move_block(game: &mut Game, new_pos: Position) {
 }
 
 pub fn hard_drop(game: &mut Game) {
-    while {
-        let new_pos = Position {
-            x: game.pos.x,
-            y: game.pos.y + 1,
-        };
-        !is_collision(&game.field, &new_pos, &game.block)
-    } {
-        game.pos.y += 1;
-    }
-    let new_pos = game.pos;
-    move_block(game, new_pos);
+    let pos = hard_drop_pos(&game.field, &game.pos, &game.block);
+    move_block(game, pos);
 }
 
 pub fn landing(game: &mut Game) -> Result<(), ()> {
