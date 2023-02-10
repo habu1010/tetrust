@@ -1,5 +1,6 @@
 use crate::game::*;
 use getch_rs::{Getch, Key};
+use rand::Rng;
 use std::sync::{Arc, Mutex};
 use std::{thread, time};
 
@@ -91,8 +92,32 @@ pub fn normal() -> ! {
 }
 
 pub fn auto() -> ! {
-    let _ = thread::spawn(|| loop {
-        todo!();
+    let _ = thread::spawn(|| {
+        let mut game = Game::new();
+        // 画面クリア・カーソル非表示
+        println!("\x1b[2J\x1b[H\x1b[?25l");
+        draw(&game);
+        loop {
+            thread::sleep(time::Duration::from_millis(100));
+            let mut rng = rand::thread_rng();
+            if rng.gen_range(0..5) == 0 {
+                hold(&mut game);
+            }
+            for _ in 0..rng.gen_range(0..=3) {
+                rotate_right(&mut game);
+            }
+            let dx: isize = rng.gen_range(-4..=5);
+            let new_pos = Position {
+                x: game.pos.x.checked_add_signed(dx).unwrap(),
+                y: game.pos.y,
+            };
+            move_block(&mut game, new_pos);
+            hard_drop(&mut game);
+            if landing(&mut game).is_err() {
+                game_over(&game);
+            }
+            draw(&game);
+        }
     });
 
     let g = Getch::new();
