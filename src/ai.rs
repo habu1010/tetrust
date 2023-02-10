@@ -23,14 +23,20 @@ pub fn eval(game: &Game) -> Game {
 
             let line_count = erase_line_count(&game.field);
             let height_max = field_height_max(&game.field);
+            let height_diff = diff_in_height(&game.field);
+            let dead_space_count = dead_space_count(&game.field);
 
             // 正規化 & 重み付け
             let line_count = normalization(line_count as f64, 0.0, 4.0);
             let height_max = 1.0 - normalization(height_max as f64, 0.0, 20.0);
+            let height_diff = 1.0 - normalization(height_diff as f64, 0.0, 200.0);
+            let dead_space_count = 1.0 - normalization(dead_space_count as f64, 0.0, 200.0);
             let line_count = line_count * 100.0;
             let height_max = height_max * 1.0;
+            let height_diff = height_diff * 10.0;
+            let dead_space_count = dead_space_count * 30.0;
 
-            let score = line_count + height_max;
+            let score = line_count + height_max + height_diff + dead_space_count;
             if elite.1 < score {
                 let mut game = game_rotated.clone();
                 move_block(&mut game, new_pos);
@@ -65,4 +71,36 @@ pub fn field_height_max(field: &FieldSize) -> usize {
         }
     }
     unreachable!();
+}
+
+pub fn diff_in_height(field: &FieldSize) -> usize {
+    let mut top = [0; FIELD_WIDTH - 4];
+    for x in 2..FIELD_WIDTH - 2 {
+        for y in 1..FIELD_HEIGHT - 2 {
+            if field[y][x] != block_kind::NONE {
+                top[x - 2] = FIELD_HEIGHT - y - 2;
+                break;
+            }
+        }
+    }
+
+    let adjacent_pair_iter = top.iter().zip(top.iter().skip(1));
+    adjacent_pair_iter.fold(0, |sum, i| sum + i.0.abs_diff(*i.1))
+}
+
+pub fn dead_space_count(field: &FieldSize) -> usize {
+    let mut count = 0;
+    for y in (1..FIELD_HEIGHT - 2).rev() {
+        for x in 2..FIELD_WIDTH - 2 {
+            if field[y][x] == block_kind::NONE {
+                for y2 in (2..y).rev() {
+                    if field[y2][x] != block_kind::NONE {
+                        count += 1;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    count
 }
