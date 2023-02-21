@@ -1,11 +1,13 @@
 use crate::ai::eval;
 use crate::game::*;
+use crate::timer::Timer;
 use getch_rs::{Getch, Key};
 use std::sync::{Arc, Mutex};
 use std::{thread, time};
 
 pub fn normal() -> ! {
     let game = Arc::new(Mutex::new(Game::new()));
+    let drop_timer = Arc::new(Timer::new());
 
     // 画面クリア・カーソル非表示
     println!("\x1b[2J\x1b[H\x1b[?25l");
@@ -14,8 +16,10 @@ pub fn normal() -> ! {
 
     {
         let game = Arc::clone(&game);
+        let drop_timer = Arc::clone(&drop_timer);
+
         let _ = thread::spawn(move || loop {
-            thread::sleep(time::Duration::from_millis(1000));
+            drop_timer.wait(time::Duration::from_millis(1000));
             let mut game = game.lock().unwrap();
             let new_pos = Position {
                 x: game.pos.x,
@@ -41,6 +45,7 @@ pub fn normal() -> ! {
                 };
                 move_block(&mut game, new_pos);
                 draw(&game);
+                drop_timer.reset();
             }
             Ok(Key::Left) => {
                 let mut game = game.lock().unwrap();

@@ -2,6 +2,7 @@ mod ai;
 mod block;
 mod game;
 mod play;
+mod timer;
 
 use clap::{Parser, Subcommand};
 
