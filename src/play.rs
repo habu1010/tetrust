@@ -22,7 +22,7 @@ pub fn normal() -> Result<(), Box<dyn Error>> {
                 x: game.pos.x,
                 y: game.pos.y + 1,
             };
-            if !is_collision(&game.field, &new_pos, &game.block) {
+            if !is_collision(&game.field, &new_pos, &game.tetromino) {
                 game.pos = new_pos;
             } else if landing(&mut game).is_err() {
                 let _ = ui.game_over(&game);
@@ -68,7 +68,7 @@ fn process_key_input(game: &mut Game, key: KeyEvent) -> Option<KeyInputProcessRe
                 x: game.pos.x,
                 y: game.pos.y + 1,
             };
-            move_block(game, new_pos);
+            move_tetromino(game, new_pos);
             return Some(KeyInputProcessResult::NextAutoDropInstant(
                 time::Instant::now() + time::Duration::from_millis(1000),
             ));
@@ -78,14 +78,14 @@ fn process_key_input(game: &mut Game, key: KeyEvent) -> Option<KeyInputProcessRe
                 x: game.pos.x.checked_sub(1).unwrap_or(game.pos.x),
                 y: game.pos.y,
             };
-            move_block(game, new_pos);
+            move_tetromino(game, new_pos);
         }
         KeyCode::Right => {
             let new_pos = Position {
                 x: game.pos.x + 1,
                 y: game.pos.y,
             };
-            move_block(game, new_pos);
+            move_tetromino(game, new_pos);
         }
         KeyCode::Up => {
             hard_drop(game);

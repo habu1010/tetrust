@@ -1,13 +1,13 @@
-pub mod block;
 pub mod cell;
-use crate::game::block::{gen_block_7, BlockShape};
+pub mod tetromino;
+use crate::game::tetromino::gen_tetromino_7;
 use cell::WALL as W;
 use std::collections::VecDeque;
 
 pub const FIELD_WIDTH: usize = 10 + 2 + 2; // フィールド横幅+壁+番兵
 pub const FIELD_HEIGHT: usize = 20 + 1 + 1 + 1; // フィールド縦幅+床+天井+番兵
 
-pub const NEXT_BLOCKS_SIZE: usize = 3;
+pub const NEXT_TETROMINOES_SIZE: usize = 3;
 
 pub const SCORE_TABLE: [usize; 5] = [0, 1, 5, 25, 100];
 
@@ -29,10 +29,10 @@ impl Position {
 pub struct Game {
     pub field: FieldSize,
     pub pos: Position,
-    pub block: BlockShape,
-    pub hold: Option<BlockShape>,
+    pub tetromino: tetromino::Shape,
+    pub hold_tetromino: Option<tetromino::Shape>,
     pub held: bool,
-    pub next_blocks: VecDeque<BlockShape>,
+    pub next_tetrominoes: VecDeque<tetromino::Shape>,
     pub score: usize,
 }
 
@@ -65,24 +65,24 @@ impl Game {
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             ],
             pos: Position::init(),
-            block: Default::default(),
-            hold: None,
+            tetromino: Default::default(),
+            hold_tetromino: None,
             held: false,
-            next_blocks: gen_block_7().into(),
+            next_tetrominoes: gen_tetromino_7().into(),
             score: 0,
         };
-        spawn_block(&mut game).ok();
+        spawn_tetromino(&mut game).ok();
         game
     }
 }
 
-pub fn is_collision(field: &FieldSize, pos: &Position, block: &BlockShape) -> bool {
+pub fn is_collision(field: &FieldSize, pos: &Position, tetromino: &tetromino::Shape) -> bool {
     for y in 0..4 {
         for x in 0..4 {
             if y + pos.y >= FIELD_HEIGHT || x + pos.x >= FIELD_WIDTH {
                 return true;
             }
-            if field[y + pos.y][x + pos.x] != cell::NONE && block[y][x] != cell::NONE {
+            if field[y + pos.y][x + pos.x] != cell::NONE && tetromino[y][x] != cell::NONE {
                 return true;
             }
         }
@@ -90,28 +90,31 @@ pub fn is_collision(field: &FieldSize, pos: &Position, block: &BlockShape) -> bo
     false
 }
 
-pub fn hard_drop_pos(field: &FieldSize, pos: &Position, block: &BlockShape) -> Position {
+pub fn hard_drop_pos(field: &FieldSize, pos: &Position, tetromino: &tetromino::Shape) -> Position {
     let mut pos = *pos;
     while {
         let new_pos = Position {
             x: pos.x,
             y: pos.y + 1,
         };
-        !is_collision(field, &new_pos, block)
+        !is_collision(field, &new_pos, tetromino)
     } {
         pos.y += 1;
     }
     pos
 }
 
-pub fn fix_block(
+pub fn fix_tetromino(
     Game {
-        field, pos, block, ..
+        field,
+        pos,
+        tetromino,
+        ..
     }: &mut Game,
 ) {
     for y in 0..4 {
         for x in 0..4 {
-            field[y + pos.y][x + pos.x] |= block[y][x];
+            field[y + pos.y][x + pos.x] |= tetromino[y][x];
         }
     }
 }
@@ -139,7 +142,7 @@ pub fn erase_line(field: &mut FieldSize) -> usize {
 pub fn super_rotation(
     field: &FieldSize,
     pos: &Position,
-    block: &BlockShape,
+    tetromino: &tetromino::Shape,
 ) -> Result<Position, ()> {
     let diff_pos_list = [
         Position {
@@ -160,7 +163,7 @@ pub fn super_rotation(
         },
     ];
     for diff_pos in diff_pos_list {
-        if !is_collision(field, &diff_pos, block) {
+        if !is_collision(field, &diff_pos, tetromino) {
             return Ok(diff_pos);
         }
     }
@@ -168,79 +171,79 @@ pub fn super_rotation(
 }
 
 pub fn rotate_left(game: &mut Game) {
-    let mut new_shape: BlockShape = Default::default();
+    let mut new_shape: tetromino::Shape = Default::default();
     for y in 0..4 {
         for x in 0..4 {
-            new_shape[4 - 1 - x][y] = game.block[y][x];
+            new_shape[4 - 1 - x][y] = game.tetromino[y][x];
         }
     }
     if !is_collision(&game.field, &game.pos, &new_shape) {
-        game.block = new_shape;
+        game.tetromino = new_shape;
     } else if let Ok(new_pos) = super_rotation(&game.field, &game.pos, &new_shape) {
         game.pos = new_pos;
-        game.block = new_shape;
+        game.tetromino = new_shape;
     }
 }
 
 pub fn rotate_right(game: &mut Game) {
-    let mut new_shape: BlockShape = Default::default();
+    let mut new_shape: tetromino::Shape = Default::default();
     for y in 0..4 {
         for x in 0..4 {
-            new_shape[y][x] = game.block[4 - 1 - x][y];
+            new_shape[y][x] = game.tetromino[4 - 1 - x][y];
         }
     }
     if !is_collision(&game.field, &game.pos, &new_shape) {
-        game.block = new_shape;
+        game.tetromino = new_shape;
     } else if let Ok(new_pos) = super_rotation(&game.field, &game.pos, &new_shape) {
         game.pos = new_pos;
-        game.block = new_shape;
+        game.tetromino = new_shape;
     }
 }
 
-pub fn move_block(game: &mut Game, new_pos: Position) {
-    if !is_collision(&game.field, &new_pos, &game.block) {
+pub fn move_tetromino(game: &mut Game, new_pos: Position) {
+    if !is_collision(&game.field, &new_pos, &game.tetromino) {
         game.pos = new_pos;
     }
 }
 
 pub fn hard_drop(game: &mut Game) {
-    let pos = hard_drop_pos(&game.field, &game.pos, &game.block);
-    move_block(game, pos);
+    let pos = hard_drop_pos(&game.field, &game.pos, &game.tetromino);
+    move_tetromino(game, pos);
 }
 
 pub fn hold(game: &mut Game) {
     if game.held {
         return;
     }
-    if let Some(mut hold) = game.hold {
-        std::mem::swap(&mut hold, &mut game.block);
-        game.hold = Some(hold);
+    if let Some(mut hold) = game.hold_tetromino {
+        std::mem::swap(&mut hold, &mut game.tetromino);
+        game.hold_tetromino = Some(hold);
         game.pos = Position::init();
     } else {
-        game.hold = Some(game.block);
-        spawn_block(game).ok();
+        game.hold_tetromino = Some(game.tetromino);
+        spawn_tetromino(game).ok();
     }
 
     game.held = true;
 }
 
 pub fn landing(game: &mut Game) -> Result<(), ()> {
-    fix_block(game);
+    fix_tetromino(game);
     let count = erase_line(&mut game.field);
     game.score += SCORE_TABLE[count];
-    spawn_block(game)?;
+    spawn_tetromino(game)?;
     game.held = false;
     Ok(())
 }
 
-pub fn spawn_block(game: &mut Game) -> Result<(), ()> {
+pub fn spawn_tetromino(game: &mut Game) -> Result<(), ()> {
     game.pos = Position::init();
-    game.block = game.next_blocks.pop_front().unwrap();
-    if game.next_blocks.len() < NEXT_BLOCKS_SIZE {
-        let mut next7: VecDeque<_> = gen_block_7().into();
-        game.next_blocks.append(&mut next7);
+    game.tetromino = game.next_tetrominoes.pop_front().unwrap();
+    if game.next_tetrominoes.len() < NEXT_TETROMINOES_SIZE {
+        let mut next7: VecDeque<_> = gen_tetromino_7().into();
+        game.next_tetrominoes.append(&mut next7);
     }
-    if is_collision(&game.field, &game.pos, &game.block) {
+    if is_collision(&game.field, &game.pos, &game.tetromino) {
         Err(())
     } else {
         Ok(())

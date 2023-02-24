@@ -21,9 +21,9 @@ pub fn eval(game: &Game) -> Game {
                     x: game.pos.x.checked_add_signed(dx).unwrap_or(0),
                     y: game.pos.y,
                 };
-                move_block(&mut game, new_pos);
+                move_tetromino(&mut game, new_pos);
                 hard_drop(&mut game);
-                fix_block(&mut game);
+                fix_tetromino(&mut game);
 
                 let line_count = erase_line_count(&game.field);
                 let height_max = field_height_max(&game.field);
@@ -43,7 +43,7 @@ pub fn eval(game: &Game) -> Game {
                 let score = line_count + height_max + height_diff + dead_space_count;
                 if elite.1 < score {
                     let mut game = game_rotated.clone();
-                    move_block(&mut game, new_pos);
+                    move_tetromino(&mut game, new_pos);
                     elite.0 = game;
                     elite.1 = score;
                 }

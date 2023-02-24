@@ -1,6 +1,6 @@
 use crate::game::{
-    block::BlockShape, cell, hard_drop_pos, FieldSize, Game, FIELD_HEIGHT, FIELD_WIDTH,
-    NEXT_BLOCKS_SIZE,
+    cell, hard_drop_pos, tetromino, FieldSize, Game, FIELD_HEIGHT, FIELD_WIDTH,
+    NEXT_TETROMINOES_SIZE,
 };
 use crossterm::{
     event::{self, Event},
@@ -30,7 +30,7 @@ const BG_COLOR_TABLE: [Color; 10] = [
     Color::Rgb(255, 0, 255),   // T
 ];
 
-fn get_block(kind: cell::Kind) -> (&'static str, Style) {
+fn get_cell_attribute(kind: cell::Kind) -> (&'static str, Style) {
     let style = Style::default().bg(BG_COLOR_TABLE[kind]);
     match kind {
         cell::NONE => ("  ", style),
@@ -62,30 +62,33 @@ impl<'a> Widget for FieldWidget<'a> {
                 {
                     continue;
                 }
-                let (s, style) = get_block(self.field[y][x] as usize);
+                let (s, style) = get_cell_attribute(self.field[y][x] as usize);
                 buf.set_string(px, py, s, style);
             }
         }
     }
 }
 
-struct HoldBlockWidget<'a> {
+struct HoldTetrominoWidget<'a> {
     block: Option<Block<'a>>,
-    hold: &'a Option<BlockShape>,
+    tetromino: &'a Option<tetromino::Shape>,
 }
 
-impl<'a> HoldBlockWidget<'a> {
-    fn new(hold: &Option<BlockShape>) -> HoldBlockWidget {
-        HoldBlockWidget { block: None, hold }
+impl<'a> HoldTetrominoWidget<'a> {
+    fn new(tetromino: &Option<tetromino::Shape>) -> HoldTetrominoWidget {
+        HoldTetrominoWidget {
+            block: None,
+            tetromino,
+        }
     }
 
-    fn block(mut self, block: Block<'a>) -> HoldBlockWidget<'a> {
+    fn block(mut self, block: Block<'a>) -> HoldTetrominoWidget<'a> {
         self.block = Some(block);
         self
     }
 }
 
-impl<'a> Widget for HoldBlockWidget<'a> {
+impl<'a> Widget for HoldTetrominoWidget<'a> {
     fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
         let area = match self.block {
             Some(b) => {
@@ -100,9 +103,9 @@ impl<'a> Widget for HoldBlockWidget<'a> {
             for x in 0..4 {
                 let px = area.x + (x * 2) as u16;
                 let py = area.y + y as u16;
-                match self.hold {
+                match self.tetromino {
                     Some(hold) => {
-                        let (s, style) = get_block(hold[y][x]);
+                        let (s, style) = get_cell_attribute(hold[y][x]);
                         buf.set_string(px, py, s, style);
                     }
                     None => buf.set_string(
@@ -117,26 +120,26 @@ impl<'a> Widget for HoldBlockWidget<'a> {
     }
 }
 
-struct NextBlockWidget<'a> {
+struct NextTetrominoesWidget<'a> {
     block: Option<Block<'a>>,
-    next_blocks: &'a VecDeque<BlockShape>,
+    next_tetrominoes: &'a VecDeque<tetromino::Shape>,
 }
 
-impl<'a> NextBlockWidget<'a> {
-    fn new(next_blocks: &VecDeque<BlockShape>) -> NextBlockWidget {
-        NextBlockWidget {
+impl<'a> NextTetrominoesWidget<'a> {
+    fn new(next_tetrominoes: &VecDeque<tetromino::Shape>) -> NextTetrominoesWidget {
+        NextTetrominoesWidget {
             block: None,
-            next_blocks,
+            next_tetrominoes,
         }
     }
 
-    fn block(mut self, block: Block<'a>) -> NextBlockWidget<'a> {
+    fn block(mut self, block: Block<'a>) -> NextTetrominoesWidget<'a> {
         self.block = Some(block);
         self
     }
 }
 
-impl<'a> Widget for NextBlockWidget<'a> {
+impl<'a> Widget for NextTetrominoesWidget<'a> {
     fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
         let area = match self.block {
             Some(b) => {
@@ -147,12 +150,17 @@ impl<'a> Widget for NextBlockWidget<'a> {
             None => area,
         };
 
-        for (i, block) in self.next_blocks.iter().take(NEXT_BLOCKS_SIZE).enumerate() {
+        for (i, tetromino) in self
+            .next_tetrominoes
+            .iter()
+            .take(NEXT_TETROMINOES_SIZE)
+            .enumerate()
+        {
             for y in 0..4 {
                 for x in 0..4 {
                     let px = area.x + (x * 2) as u16;
                     let py = area.y + (i * 4 + y) as u16;
-                    let (s, style) = get_block(block[y][x]);
+                    let (s, style) = get_cell_attribute(tetromino[y][x]);
                     buf.set_string(px, py, s, style);
                 }
             }
@@ -270,10 +278,10 @@ fn create_game_layout() -> GameLayout {
 fn draw_game<B: Backend>(f: &mut Frame<B>, layout: &GameLayout, game: &Game) {
     let mut field_buf = game.field;
 
-    let ghost_pos = hard_drop_pos(&game.field, &game.pos, &game.block);
+    let ghost_pos = hard_drop_pos(&game.field, &game.pos, &game.tetromino);
     for y in 0..4 {
         for x in 0..4 {
-            if game.block[y][x] != cell::NONE {
+            if game.tetromino[y][x] != cell::NONE {
                 field_buf[y + ghost_pos.y][x + ghost_pos.x] = cell::GHOST;
             }
         }
@@ -281,8 +289,8 @@ fn draw_game<B: Backend>(f: &mut Frame<B>, layout: &GameLayout, game: &Game) {
 
     for y in 0..4 {
         for x in 0..4 {
-            if game.block[y][x] != cell::NONE {
-                field_buf[y + game.pos.y][x + game.pos.x] = game.block[y][x];
+            if game.tetromino[y][x] != cell::NONE {
+                field_buf[y + game.pos.y][x + game.pos.x] = game.tetromino[y][x];
             }
         }
     }
@@ -291,8 +299,10 @@ fn draw_game<B: Backend>(f: &mut Frame<B>, layout: &GameLayout, game: &Game) {
     let box_border = Block::default()
         .borders(Borders::ALL)
         .title_alignment(Alignment::Center);
-    let hold_block_box = HoldBlockWidget::new(&game.hold).block(box_border.clone().title("HOLD"));
-    let next_blocks_box = NextBlockWidget::new(&game.next_blocks).block(box_border.title("NEXT"));
+    let hold_tetromino_box =
+        HoldTetrominoWidget::new(&game.hold_tetromino).block(box_border.clone().title("HOLD"));
+    let next_tetrominoes_box =
+        NextTetrominoesWidget::new(&game.next_tetrominoes).block(box_border.title("NEXT"));
     let score_box = Paragraph::new(game.score.to_string())
         .block(
             Block::default()
@@ -304,7 +314,7 @@ fn draw_game<B: Backend>(f: &mut Frame<B>, layout: &GameLayout, game: &Game) {
         .alignment(Alignment::Right);
 
     f.render_widget(field, layout.center_pane_chunks[0]);
-    f.render_widget(hold_block_box, layout.left_pane_chunks[0]);
+    f.render_widget(hold_tetromino_box, layout.left_pane_chunks[0]);
     f.render_widget(score_box, layout.left_pane_chunks[1]);
-    f.render_widget(next_blocks_box, layout.right_pane_chunks[0]);
+    f.render_widget(next_tetrominoes_box, layout.right_pane_chunks[0]);
 }
