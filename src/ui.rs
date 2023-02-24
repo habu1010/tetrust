@@ -1,5 +1,5 @@
 use crate::game::{
-    cell, hard_drop_pos, tetromino, FieldSize, Game, FIELD_HEIGHT, FIELD_WIDTH,
+    cell, hard_drop_pos, tetromino::Tetromino, FieldSize, Game, FIELD_HEIGHT, FIELD_WIDTH,
     NEXT_TETROMINOES_SIZE,
 };
 use crossterm::{
@@ -71,11 +71,11 @@ impl<'a> Widget for FieldWidget<'a> {
 
 struct HoldTetrominoWidget<'a> {
     block: Option<Block<'a>>,
-    tetromino: &'a Option<tetromino::Shape>,
+    tetromino: &'a Option<Tetromino>,
 }
 
 impl<'a> HoldTetrominoWidget<'a> {
-    fn new(tetromino: &Option<tetromino::Shape>) -> HoldTetrominoWidget {
+    fn new(tetromino: &Option<Tetromino>) -> HoldTetrominoWidget {
         HoldTetrominoWidget {
             block: None,
             tetromino,
@@ -99,22 +99,16 @@ impl<'a> Widget for HoldTetrominoWidget<'a> {
             None => area,
         };
 
+        let shape = match self.tetromino {
+            Some(tetromino) => tetromino.get_shape(),
+            None => Default::default(),
+        };
         for y in 0..4 {
             for x in 0..4 {
                 let px = area.x + (x * 2) as u16;
                 let py = area.y + y as u16;
-                match self.tetromino {
-                    Some(hold) => {
-                        let (s, style) = get_cell_attribute(hold[y][x]);
-                        buf.set_string(px, py, s, style);
-                    }
-                    None => buf.set_string(
-                        px,
-                        py,
-                        "  ",
-                        Style::default().bg(BG_COLOR_TABLE[cell::NONE]),
-                    ),
-                }
+                let (s, style) = get_cell_attribute(shape[y][x]);
+                buf.set_string(px, py, s, style);
             }
         }
     }
@@ -122,11 +116,11 @@ impl<'a> Widget for HoldTetrominoWidget<'a> {
 
 struct NextTetrominoesWidget<'a> {
     block: Option<Block<'a>>,
-    next_tetrominoes: &'a VecDeque<tetromino::Shape>,
+    next_tetrominoes: &'a VecDeque<Tetromino>,
 }
 
 impl<'a> NextTetrominoesWidget<'a> {
-    fn new(next_tetrominoes: &VecDeque<tetromino::Shape>) -> NextTetrominoesWidget {
+    fn new(next_tetrominoes: &VecDeque<Tetromino>) -> NextTetrominoesWidget {
         NextTetrominoesWidget {
             block: None,
             next_tetrominoes,
@@ -156,11 +150,12 @@ impl<'a> Widget for NextTetrominoesWidget<'a> {
             .take(NEXT_TETROMINOES_SIZE)
             .enumerate()
         {
+            let shape = tetromino.get_shape();
             for y in 0..4 {
                 for x in 0..4 {
                     let px = area.x + (x * 2) as u16;
                     let py = area.y + (i * 4 + y) as u16;
-                    let (s, style) = get_cell_attribute(tetromino[y][x]);
+                    let (s, style) = get_cell_attribute(shape[y][x]);
                     buf.set_string(px, py, s, style);
                 }
             }
@@ -279,9 +274,11 @@ fn draw_game<B: Backend>(f: &mut Frame<B>, layout: &GameLayout, game: &Game) {
     let mut field_buf = game.field;
 
     let ghost_pos = hard_drop_pos(&game.field, &game.pos, &game.tetromino);
+    let shape = game.tetromino.get_shape();
+
     for y in 0..4 {
         for x in 0..4 {
-            if game.tetromino[y][x] != cell::NONE {
+            if shape[y][x] != cell::NONE {
                 field_buf[y + ghost_pos.y][x + ghost_pos.x] = cell::GHOST;
             }
         }
@@ -289,8 +286,8 @@ fn draw_game<B: Backend>(f: &mut Frame<B>, layout: &GameLayout, game: &Game) {
 
     for y in 0..4 {
         for x in 0..4 {
-            if game.tetromino[y][x] != cell::NONE {
-                field_buf[y + game.pos.y][x + game.pos.x] = game.tetromino[y][x];
+            if shape[y][x] != cell::NONE {
+                field_buf[y + game.pos.y][x + game.pos.x] = shape[y][x];
             }
         }
     }

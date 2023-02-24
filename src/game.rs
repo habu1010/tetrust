@@ -3,6 +3,7 @@ pub mod tetromino;
 use crate::game::tetromino::gen_tetromino_7;
 use cell::WALL as W;
 use std::collections::VecDeque;
+use tetromino::Tetromino;
 
 pub const FIELD_WIDTH: usize = 10 + 2 + 2; // フィールド横幅+壁+番兵
 pub const FIELD_HEIGHT: usize = 20 + 1 + 1 + 1; // フィールド縦幅+床+天井+番兵
@@ -29,10 +30,10 @@ impl Position {
 pub struct Game {
     pub field: FieldSize,
     pub pos: Position,
-    pub tetromino: tetromino::Shape,
-    pub hold_tetromino: Option<tetromino::Shape>,
+    pub tetromino: Tetromino,
+    pub hold_tetromino: Option<Tetromino>,
     pub held: bool,
-    pub next_tetrominoes: VecDeque<tetromino::Shape>,
+    pub next_tetrominoes: VecDeque<Tetromino>,
     pub score: usize,
 }
 
@@ -76,13 +77,14 @@ impl Game {
     }
 }
 
-pub fn is_collision(field: &FieldSize, pos: &Position, tetromino: &tetromino::Shape) -> bool {
+pub fn is_collision(field: &FieldSize, pos: &Position, tetromino: &Tetromino) -> bool {
+    let shape = tetromino.get_shape();
     for y in 0..4 {
         for x in 0..4 {
             if y + pos.y >= FIELD_HEIGHT || x + pos.x >= FIELD_WIDTH {
                 return true;
             }
-            if field[y + pos.y][x + pos.x] != cell::NONE && tetromino[y][x] != cell::NONE {
+            if field[y + pos.y][x + pos.x] != cell::NONE && shape[y][x] != cell::NONE {
                 return true;
             }
         }
@@ -90,7 +92,7 @@ pub fn is_collision(field: &FieldSize, pos: &Position, tetromino: &tetromino::Sh
     false
 }
 
-pub fn hard_drop_pos(field: &FieldSize, pos: &Position, tetromino: &tetromino::Shape) -> Position {
+pub fn hard_drop_pos(field: &FieldSize, pos: &Position, tetromino: &Tetromino) -> Position {
     let mut pos = *pos;
     while {
         let new_pos = Position {
@@ -112,9 +114,10 @@ pub fn fix_tetromino(
         ..
     }: &mut Game,
 ) {
+    let shape = tetromino.get_shape();
     for y in 0..4 {
         for x in 0..4 {
-            field[y + pos.y][x + pos.x] |= tetromino[y][x];
+            field[y + pos.y][x + pos.x] |= shape[y][x];
         }
     }
 }
@@ -142,7 +145,7 @@ pub fn erase_line(field: &mut FieldSize) -> usize {
 pub fn super_rotation(
     field: &FieldSize,
     pos: &Position,
-    tetromino: &tetromino::Shape,
+    tetromino: &Tetromino,
 ) -> Result<Position, ()> {
     let diff_pos_list = [
         Position {
@@ -171,32 +174,22 @@ pub fn super_rotation(
 }
 
 pub fn rotate_left(game: &mut Game) {
-    let mut new_shape: tetromino::Shape = Default::default();
-    for y in 0..4 {
-        for x in 0..4 {
-            new_shape[4 - 1 - x][y] = game.tetromino[y][x];
-        }
-    }
-    if !is_collision(&game.field, &game.pos, &new_shape) {
-        game.tetromino = new_shape;
-    } else if let Ok(new_pos) = super_rotation(&game.field, &game.pos, &new_shape) {
+    let rotated = game.tetromino.rotate_left();
+    if !is_collision(&game.field, &game.pos, &rotated) {
+        game.tetromino = rotated;
+    } else if let Ok(new_pos) = super_rotation(&game.field, &game.pos, &rotated) {
         game.pos = new_pos;
-        game.tetromino = new_shape;
+        game.tetromino = rotated;
     }
 }
 
 pub fn rotate_right(game: &mut Game) {
-    let mut new_shape: tetromino::Shape = Default::default();
-    for y in 0..4 {
-        for x in 0..4 {
-            new_shape[y][x] = game.tetromino[4 - 1 - x][y];
-        }
-    }
-    if !is_collision(&game.field, &game.pos, &new_shape) {
-        game.tetromino = new_shape;
-    } else if let Ok(new_pos) = super_rotation(&game.field, &game.pos, &new_shape) {
+    let rotated = game.tetromino.rotate_right();
+    if !is_collision(&game.field, &game.pos, &rotated) {
+        game.tetromino = rotated;
+    } else if let Ok(new_pos) = super_rotation(&game.field, &game.pos, &rotated) {
         game.pos = new_pos;
-        game.tetromino = new_shape;
+        game.tetromino = rotated;
     }
 }
 
