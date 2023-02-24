@@ -5,6 +5,8 @@ use cell::WALL as W;
 use std::collections::VecDeque;
 use tetromino::Tetromino;
 
+use self::tetromino::WallKickOffsets;
+
 pub const FIELD_WIDTH: usize = 10 + 2 + 2; // フィールド横幅+壁+番兵
 pub const FIELD_HEIGHT: usize = 20 + 1 + 1 + 1; // フィールド縦幅+床+天井+番兵
 
@@ -142,42 +144,24 @@ pub fn erase_line(field: &mut FieldSize) -> usize {
     count
 }
 
-pub fn super_rotation(
-    field: &FieldSize,
-    pos: &Position,
-    tetromino: &Tetromino,
-) -> Result<Position, ()> {
-    let diff_pos_list = [
-        Position {
-            x: pos.x,
-            y: pos.y.checked_sub(1).unwrap_or(pos.y),
-        },
-        Position {
-            x: pos.x + 1,
-            y: pos.y,
-        },
-        Position {
-            x: pos.x,
-            y: pos.y + 1,
-        },
-        Position {
-            x: pos.x.checked_sub(1).unwrap_or(pos.x),
-            y: pos.y,
-        },
-    ];
-    for diff_pos in diff_pos_list {
-        if !is_collision(field, &diff_pos, tetromino) {
-            return Ok(diff_pos);
+fn wall_kick(game: &Game, tetromino: &Tetromino, offsets: &WallKickOffsets) -> Option<Position> {
+    for (dx, dy) in offsets {
+        let new_pos = Position {
+            x: game.pos.x.checked_add_signed(*dx).unwrap_or(game.pos.x),
+            y: game.pos.y.checked_add_signed(*dy).unwrap_or(game.pos.y),
+        };
+        if is_collision(&game.field, &new_pos, &tetromino) {
+            continue;
         }
+        return Some(new_pos);
     }
-    Err(())
+    None
 }
 
 pub fn rotate_left(game: &mut Game) {
     let rotated = game.tetromino.rotate_left();
-    if !is_collision(&game.field, &game.pos, &rotated) {
-        game.tetromino = rotated;
-    } else if let Ok(new_pos) = super_rotation(&game.field, &game.pos, &rotated) {
+    let offsets = game.tetromino.rotate_left_wall_kick_offsets();
+    if let Some(new_pos) = wall_kick(game, &rotated, &offsets) {
         game.pos = new_pos;
         game.tetromino = rotated;
     }
@@ -185,9 +169,8 @@ pub fn rotate_left(game: &mut Game) {
 
 pub fn rotate_right(game: &mut Game) {
     let rotated = game.tetromino.rotate_right();
-    if !is_collision(&game.field, &game.pos, &rotated) {
-        game.tetromino = rotated;
-    } else if let Ok(new_pos) = super_rotation(&game.field, &game.pos, &rotated) {
+    let offsets = game.tetromino.rotate_right_wall_kick_offsets();
+    if let Some(new_pos) = wall_kick(game, &rotated, &offsets) {
         game.pos = new_pos;
         game.tetromino = rotated;
     }

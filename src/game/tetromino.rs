@@ -37,6 +37,7 @@ pub struct Tetromino {
 }
 
 pub type Shape = [[usize; 4]; 4];
+pub type WallKickOffsets = [(isize, isize); 5];
 
 impl Tetromino {
     pub fn get_shape(&self) -> Shape {
@@ -83,6 +84,42 @@ impl Tetromino {
         Tetromino {
             kind: self.kind,
             rotate_state,
+        }
+    }
+
+    pub fn rotate_right_wall_kick_offsets(&self) -> WallKickOffsets {
+        match self.kind {
+            Kind::O => [(0, 0), (0, 0), (0, 0), (0, 0), (0, 0)],
+            Kind::I => match self.rotate_state {
+                RotateState::_0 => [(0, 0), (-2, 0), (1, 0), (-2, 1), (1, -2)], // 0->R
+                RotateState::_R => [(0, 0), (-1, 0), (2, 0), (-1, -2), (2, 1)], // R->2
+                RotateState::_2 => [(0, 0), (2, 0), (-1, 0), (2, -1), (-1, 2)], // 2->L
+                RotateState::_L => [(0, 0), (1, 0), (-2, 0), (1, 2), (-2, -1)], // L->0
+            },
+            _ => match self.rotate_state {
+                RotateState::_0 => [(0, 0), (-1, 0), (-1, -1), (0, 2), (-1, 2)], // 0->R
+                RotateState::_R => [(0, 0), (1, 0), (1, 1), (0, -2), (1, -2)],   // R->2
+                RotateState::_2 => [(0, 0), (1, 0), (1, -1), (0, 2), (1, 2)],    // 2->L
+                RotateState::_L => [(0, 0), (-1, 0), (-1, 1), (0, -2), (-1, -2)], // L->0
+            },
+        }
+    }
+
+    pub fn rotate_left_wall_kick_offsets(&self) -> WallKickOffsets {
+        match self.kind {
+            Kind::O => [(0, 0), (0, 0), (0, 0), (0, 0), (0, 0)],
+            Kind::I => match self.rotate_state {
+                RotateState::_R => [(0, 0), (2, 0), (-1, 0), (2, -1), (-1, 2)], // R->0
+                RotateState::_2 => [(0, 0), (1, 0), (-2, 0), (1, 2), (-2, -1)], // 2->R
+                RotateState::_L => [(0, 0), (-2, 0), (1, 0), (-2, 1), (1, -2)], // L->2
+                RotateState::_0 => [(0, 0), (-1, 0), (2, 0), (-1, -2), (2, 1)], // 0->L
+            },
+            _ => match self.rotate_state {
+                RotateState::_R => [(0, 0), (1, 0), (1, 1), (0, -2), (1, -2)], // R->0
+                RotateState::_2 => [(0, 0), (-1, 0), (-1, -1), (0, 2), (-1, 2)], // 2->R
+                RotateState::_L => [(0, 0), (-1, 0), (-1, 1), (0, -2), (-1, -2)], // L->2
+                RotateState::_0 => [(0, 0), (1, 0), (1, -1), (0, 2), (1, 2)],  // 0->L
+            },
         }
     }
 
