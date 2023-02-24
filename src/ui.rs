@@ -1,6 +1,6 @@
-use crate::block::BlockShape;
 use crate::game::{
-    cell, hard_drop_pos, FieldSize, Game, FIELD_HEIGHT, FIELD_WIDTH, NEXT_BLOCKS_SIZE,
+    block::BlockShape, cell, hard_drop_pos, FieldSize, Game, FIELD_HEIGHT, FIELD_WIDTH,
+    NEXT_BLOCKS_SIZE,
 };
 use crossterm::{
     event::{self, Event},

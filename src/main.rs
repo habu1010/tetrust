@@ -1,5 +1,4 @@
 mod ai;
-mod block;
 mod game;
 mod play;
 mod ui;

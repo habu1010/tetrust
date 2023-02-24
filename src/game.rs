@@ -1,5 +1,6 @@
+pub mod block;
 pub mod cell;
-use crate::block::{gen_block_7, BlockShape};
+use crate::game::block::{gen_block_7, BlockShape};
 use cell::WALL as W;
 use std::collections::VecDeque;
 
