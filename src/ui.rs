@@ -1,5 +1,5 @@
 use crate::game::{
-    cell, hard_drop_pos, tetromino::Tetromino, FieldSize, Game, FIELD_HEIGHT, FIELD_WIDTH,
+    cell, hard_drop_pos, tetromino::Tetromino, Game, FIELD_HEIGHT, FIELD_WIDTH,
     NEXT_TETROMINOES_SIZE,
 };
 use crossterm::{
@@ -40,30 +40,58 @@ fn get_cell_attribute(kind: cell::Kind) -> (&'static str, Style) {
 }
 
 struct FieldWidget<'a> {
-    field: &'a FieldSize,
+    game: &'a Game,
 }
 
 impl<'a> FieldWidget<'a> {
-    fn new(field: &FieldSize) -> FieldWidget {
-        FieldWidget { field }
+    fn new(game: &Game) -> FieldWidget {
+        FieldWidget { game }
+    }
+
+    pub fn calc_coordinate(area: Rect, x: usize, y: usize) -> (u16, u16) {
+        let px = area.x + (x * 2 - 2) as u16;
+        let py = area.y + y as u16;
+
+        (px, py)
     }
 }
 
 impl<'a> Widget for FieldWidget<'a> {
     fn render(self, area: tui::layout::Rect, buf: &mut tui::buffer::Buffer) {
+        let game = &self.game;
+
+        // フィールド
         for y in 0..FIELD_HEIGHT - 1 {
             for x in 1..FIELD_WIDTH - 1 {
-                let px = area.x + (x * 2 - 2) as u16;
-                let py = area.y + y as u16;
-                if px < buf.area().x
-                    || buf.area().x + buf.area.width <= px
-                    || py < buf.area().y
-                    || buf.area().y + buf.area.width <= py
-                {
-                    continue;
-                }
-                let (s, style) = get_cell_attribute(self.field[y][x] as usize);
+                let (px, py) = Self::calc_coordinate(area, x, y);
+                let (s, style) = get_cell_attribute(game.field[y][x] as usize);
                 buf.set_string(px, py, s, style);
+            }
+        }
+
+        let shape = game.tetromino.get_shape();
+        let ghost_pos = hard_drop_pos(&game.field, &game.pos, &game.tetromino);
+
+        // ゴースト
+        for y in 0..4 {
+            for x in 0..4 {
+                if shape[y][x] != cell::NONE {
+                    let (px, py) = Self::calc_coordinate(area, ghost_pos.x + x, ghost_pos.y + y);
+                    let s = "[]";
+                    let style = Style::default().fg(BG_COLOR_TABLE[game.tetromino.cell_kind()]);
+                    buf.set_string(px, py, s, style);
+                }
+            }
+        }
+
+        // テトリミノ
+        for y in 0..4 {
+            for x in 0..4 {
+                if shape[y][x] != cell::NONE {
+                    let (px, py) = Self::calc_coordinate(area, game.pos.x + x, game.pos.y + y);
+                    let (s, style) = get_cell_attribute(shape[y][x] as usize);
+                    buf.set_string(px, py, s, style);
+                }
             }
         }
     }
@@ -271,28 +299,7 @@ fn create_game_layout() -> GameLayout {
 }
 
 fn draw_game<B: Backend>(f: &mut Frame<B>, layout: &GameLayout, game: &Game) {
-    let mut field_buf = game.field;
-
-    let ghost_pos = hard_drop_pos(&game.field, &game.pos, &game.tetromino);
-    let shape = game.tetromino.get_shape();
-
-    for y in 0..4 {
-        for x in 0..4 {
-            if shape[y][x] != cell::NONE {
-                field_buf[y + ghost_pos.y][x + ghost_pos.x] = cell::GHOST;
-            }
-        }
-    }
-
-    for y in 0..4 {
-        for x in 0..4 {
-            if shape[y][x] != cell::NONE {
-                field_buf[y + game.pos.y][x + game.pos.x] = shape[y][x];
-            }
-        }
-    }
-
-    let field = FieldWidget::new(&field_buf);
+    let field = FieldWidget::new(&game);
     let box_border = Block::default()
         .borders(Borders::ALL)
         .title_alignment(Alignment::Center);

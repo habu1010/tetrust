@@ -4,7 +4,7 @@ use rand::{
     thread_rng, Rng,
 };
 
-use crate::game::cell::{I, J, L, O, S, T, Z};
+use crate::game::cell::{self, I, J, L, O, S, T, Z};
 
 // テトリミノの種類
 const KIND_MAX: usize = 7;
@@ -83,6 +83,18 @@ impl Tetromino {
         Tetromino {
             kind: self.kind,
             rotate_state,
+        }
+    }
+
+    pub fn cell_kind(&self) -> cell::Kind {
+        match self.kind {
+            Kind::I => cell::I,
+            Kind::O => cell::O,
+            Kind::S => cell::S,
+            Kind::Z => cell::Z,
+            Kind::J => cell::J,
+            Kind::L => cell::L,
+            Kind::T => cell::T,
         }
     }
 }
