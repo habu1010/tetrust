@@ -2,7 +2,7 @@ mod ai;
 mod block;
 mod game;
 mod play;
-mod timer;
+mod ui;
 
 use clap::{Parser, Subcommand};
 
@@ -21,12 +21,12 @@ enum Mode {
 
 fn main() {
     let arg = Arg::parse();
-    match arg.mode {
-        None | Some(Mode::Normal) => {
-            play::normal();
-        }
-        Some(Mode::Auto) => {
-            play::auto();
-        }
+    let result = match arg.mode {
+        None | Some(Mode::Normal) => play::normal(),
+        Some(Mode::Auto) => play::auto(),
+    };
+
+    if let Err(err) = result {
+        println!("Error: {}", err);
     }
 }

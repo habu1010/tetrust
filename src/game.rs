@@ -1,6 +1,4 @@
-use crate::block::{
-    block_kind, block_kind::WALL as W, gen_block_7, BlockColor, BlockShape, COLOR_TABLE,
-};
+use crate::block::{block_kind, block_kind::WALL as W, gen_block_7, BlockColor, BlockShape};
 use std::collections::VecDeque;
 
 pub const FIELD_WIDTH: usize = 10 + 2 + 2; // フィールド横幅+壁+番兵
@@ -101,74 +99,6 @@ pub fn hard_drop_pos(field: &FieldSize, pos: &Position, block: &BlockShape) -> P
         pos.y += 1;
     }
     pos
-}
-
-#[allow(clippy::needless_range_loop)]
-pub fn draw(
-    Game {
-        field,
-        pos,
-        block,
-        hold,
-        held: _,
-        next_blocks,
-        score,
-    }: &Game,
-) {
-    let mut field_buf = *field;
-
-    let ghost_pos = hard_drop_pos(field, pos, block);
-    for y in 0..4 {
-        for x in 0..4 {
-            if block[y][x] != block_kind::NONE {
-                field_buf[y + ghost_pos.y][x + ghost_pos.x] = block_kind::GHOST;
-            }
-        }
-    }
-
-    for y in 0..4 {
-        for x in 0..4 {
-            if block[y][x] != block_kind::NONE {
-                field_buf[y + pos.y][x + pos.x] = block[y][x];
-            }
-        }
-    }
-
-    print!("\x1b[7;1H");
-    print!("SCORE");
-    print!("\x1b[8;1H{:>8}", score);
-
-    print!("\x1b[1;1H");
-    print!("HOLD");
-    if let Some(hold) = hold {
-        for y in 0..4 {
-            print!("\x1b[{};1H", y + 2);
-            for x in 0..4 {
-                print!("{}", COLOR_TABLE[hold[y][x]]);
-            }
-        }
-    }
-
-    print!("\x1b[1;37H");
-    print!("NEXT");
-    for (i, block) in next_blocks.iter().take(NEXT_BLOCKS_SIZE).enumerate() {
-        for y in 0..4 {
-            print!("\x1b[{};37H", i * 4 + y + 2);
-            for x in 0..4 {
-                print!("{}", COLOR_TABLE[block[y][x]]);
-            }
-        }
-    }
-
-    for y in 0..FIELD_HEIGHT - 1 {
-        print!("\x1b[{};11H", y + 1);
-        for x in 1..FIELD_WIDTH - 1 {
-            print!("{}", COLOR_TABLE[field_buf[y][x]]);
-        }
-    }
-
-    // 色情報をリセット
-    println!("\x1b[0m");
 }
 
 pub fn fix_block(
@@ -312,16 +242,4 @@ pub fn spawn_block(game: &mut Game) -> Result<(), ()> {
     } else {
         Ok(())
     }
-}
-
-pub fn game_over(game: &Game) -> ! {
-    draw(game);
-    println!("GAME OVER");
-    quit();
-}
-
-pub fn quit() -> ! {
-    // カーソルを表示
-    println!("\x1b[?25h");
-    std::process::exit(0);
 }

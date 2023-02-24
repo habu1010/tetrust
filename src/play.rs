@@ -1,26 +1,23 @@
 use crate::ai::eval;
 use crate::game::*;
-use crate::timer::Timer;
-use getch_rs::{Getch, Key};
-use std::sync::{Arc, Mutex};
+use crate::ui;
+use crossterm::event::{self, Event, KeyCode, KeyEvent};
+use std::error::Error;
 use std::{thread, time};
 
-pub fn normal() -> ! {
-    let game = Arc::new(Mutex::new(Game::new()));
-    let drop_timer = Arc::new(Timer::new());
+pub fn normal() -> Result<(), Box<dyn Error>> {
+    let mut game = Game::new();
+    let mut ui = ui::Ui::new()?;
 
-    // 画面クリア・カーソル非表示
-    println!("\x1b[2J\x1b[H\x1b[?25l");
+    let mut next_auto_drop = time::Instant::now() + time::Duration::from_millis(1000);
+    loop {
+        ui.draw(&game)?;
 
-    draw(&game.lock().unwrap());
+        let wait_duration = next_auto_drop
+            .checked_duration_since(time::Instant::now())
+            .unwrap_or(time::Duration::ZERO);
 
-    {
-        let game = Arc::clone(&game);
-        let drop_timer = Arc::clone(&drop_timer);
-
-        let _ = thread::spawn(move || loop {
-            drop_timer.wait(time::Duration::from_millis(1000));
-            let mut game = game.lock().unwrap();
+        if !event::poll(wait_duration)? {
             let new_pos = Position {
                 x: game.pos.x,
                 y: game.pos.y + 1,
@@ -28,97 +25,118 @@ pub fn normal() -> ! {
             if !is_collision(&game.field, &new_pos, &game.block) {
                 game.pos = new_pos;
             } else if landing(&mut game).is_err() {
-                game_over(&game);
+                let _ = ui.game_over(&game);
+                return ui.shutdown();
             }
-            draw(&game);
-        });
-    }
+            next_auto_drop = time::Instant::now() + time::Duration::from_millis(1000);
+            continue;
+        }
 
-    let g = Getch::new();
-    loop {
-        match g.getch() {
-            Ok(Key::Down) => {
-                let mut game = game.lock().unwrap();
-                let new_pos = Position {
-                    x: game.pos.x,
-                    y: game.pos.y + 1,
-                };
-                move_block(&mut game, new_pos);
-                draw(&game);
-                drop_timer.reset();
+        let result = match event::read()? {
+            Event::Key(key) => match process_key_input(&mut game, key) {
+                Some(result) => result,
+                _ => continue,
+            },
+            _ => continue,
+        };
+
+        match result {
+            KeyInputProcessResult::NextAutoDropInstant(instant) => {
+                next_auto_drop = instant;
             }
-            Ok(Key::Left) => {
-                let mut game = game.lock().unwrap();
-                let new_pos = Position {
-                    x: game.pos.x.checked_sub(1).unwrap_or(game.pos.x),
-                    y: game.pos.y,
-                };
-                move_block(&mut game, new_pos);
-                draw(&game);
+            KeyInputProcessResult::GameOver => {
+                let _ = ui.game_over(&game);
+                return ui.shutdown();
             }
-            Ok(Key::Right) => {
-                let mut game = game.lock().unwrap();
-                let new_pos = Position {
-                    x: game.pos.x + 1,
-                    y: game.pos.y,
-                };
-                move_block(&mut game, new_pos);
-                draw(&game);
+            KeyInputProcessResult::QuitGame => {
+                return ui.shutdown();
             }
-            Ok(Key::Up) => {
-                let mut game = game.lock().unwrap();
-                hard_drop(&mut game);
-                if landing(&mut game).is_err() {
-                    game_over(&game);
-                }
-                draw(&game);
-            }
-            Ok(Key::Char('z')) => {
-                let mut game = game.lock().unwrap();
-                rotate_left(&mut game);
-                draw(&game);
-            }
-            Ok(Key::Char('x')) => {
-                let mut game = game.lock().unwrap();
-                rotate_right(&mut game);
-                draw(&game);
-            }
-            Ok(Key::Char(' ')) => {
-                let mut game = game.lock().unwrap();
-                hold(&mut game);
-                draw(&game);
-            }
-            Ok(Key::Char('q')) => {
-                quit();
-            }
-            _ => (),
         }
     }
 }
 
-pub fn auto() -> ! {
-    let _ = thread::spawn(|| {
-        let mut game = Game::new();
-        // 画面クリア・カーソル非表示
-        println!("\x1b[2J\x1b[H\x1b[?25l");
-        loop {
-            draw(&game);
-            thread::sleep(time::Duration::from_millis(100));
-            let elite = eval(&game);
-            game = elite;
-            draw(&game);
-            thread::sleep(time::Duration::from_millis(100));
-            hard_drop(&mut game);
-            if landing(&mut game).is_err() {
-                game_over(&game);
+enum KeyInputProcessResult {
+    NextAutoDropInstant(time::Instant),
+    QuitGame,
+    GameOver,
+}
+
+fn process_key_input(game: &mut Game, key: KeyEvent) -> Option<KeyInputProcessResult> {
+    match key.code {
+        KeyCode::Down => {
+            let new_pos = Position {
+                x: game.pos.x,
+                y: game.pos.y + 1,
+            };
+            move_block(game, new_pos);
+            return Some(KeyInputProcessResult::NextAutoDropInstant(
+                time::Instant::now() + time::Duration::from_millis(1000),
+            ));
+        }
+        KeyCode::Left => {
+            let new_pos = Position {
+                x: game.pos.x.checked_sub(1).unwrap_or(game.pos.x),
+                y: game.pos.y,
+            };
+            move_block(game, new_pos);
+        }
+        KeyCode::Right => {
+            let new_pos = Position {
+                x: game.pos.x + 1,
+                y: game.pos.y,
+            };
+            move_block(game, new_pos);
+        }
+        KeyCode::Up => {
+            hard_drop(game);
+            if landing(game).is_err() {
+                return Some(KeyInputProcessResult::GameOver);
             }
         }
-    });
+        KeyCode::Char('z') => {
+            rotate_left(game);
+        }
+        KeyCode::Char('x') => {
+            rotate_right(game);
+        }
+        KeyCode::Char(' ') => {
+            hold(game);
+        }
+        KeyCode::Char('q') => {
+            return Some(KeyInputProcessResult::QuitGame);
+        }
+        _ => (),
+    }
 
-    let g = Getch::new();
+    None
+}
+
+pub fn auto() -> Result<(), Box<dyn Error>> {
+    let mut game = Game::new();
+    let mut ui = ui::Ui::new()?;
+
+    let wait_duration = time::Duration::from_millis(100);
+
     loop {
-        if let Ok(Key::Char('q')) = g.getch() {
-            quit();
+        ui.draw(&game)?;
+
+        if !event::poll(wait_duration)? {
+            let elite = eval(&game);
+            game = elite;
+            ui.draw(&game)?;
+            thread::sleep(wait_duration);
+            hard_drop(&mut game);
+            if landing(&mut game).is_err() {
+                let _ = ui.game_over(&game);
+                return ui.shutdown();
+            }
+            continue;
+        }
+
+        if let Event::Key(key) = event::read()? {
+            if let KeyCode::Char('q') = key.code {
+                return ui.shutdown();
+            }
         }
     }
 }
