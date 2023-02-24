@@ -1,4 +1,3 @@
-use crate::block::block_kind;
 use crate::game::*;
 
 pub fn eval(game: &Game) -> Game {
@@ -62,7 +61,7 @@ pub fn erase_line_count(field: &FieldSize) -> usize {
     let mut count = 0;
     for y in 1..FIELD_HEIGHT - 2 {
         let line = &field[y][2..FIELD_WIDTH - 2];
-        if line.iter().all(|&f| f != block_kind::NONE) {
+        if line.iter().all(|&f| f != cell::NONE) {
             count += 1;
         }
     }
@@ -72,7 +71,7 @@ pub fn erase_line_count(field: &FieldSize) -> usize {
 pub fn field_height_max(field: &FieldSize) -> usize {
     for y in 1..FIELD_HEIGHT - 2 {
         let line = &field[y][2..FIELD_WIDTH - 2];
-        if line.iter().any(|&f| f != block_kind::NONE) {
+        if line.iter().any(|&f| f != cell::NONE) {
             return FIELD_HEIGHT - y - 2;
         }
     }
@@ -83,7 +82,7 @@ pub fn diff_in_height(field: &FieldSize) -> usize {
     let mut top = [0; FIELD_WIDTH - 4];
     for x in 2..FIELD_WIDTH - 2 {
         for y in 1..FIELD_HEIGHT - 2 {
-            if field[y][x] != block_kind::NONE {
+            if field[y][x] != cell::NONE {
                 top[x - 2] = FIELD_HEIGHT - y - 2;
                 break;
             }
@@ -98,9 +97,9 @@ pub fn dead_space_count(field: &FieldSize) -> usize {
     let mut count = 0;
     for y in (1..FIELD_HEIGHT - 2).rev() {
         for x in 2..FIELD_WIDTH - 2 {
-            if field[y][x] == block_kind::NONE {
+            if field[y][x] == cell::NONE {
                 for y2 in (2..y).rev() {
-                    if field[y2][x] != block_kind::NONE {
+                    if field[y2][x] != cell::NONE {
                         count += 1;
                         break;
                     }

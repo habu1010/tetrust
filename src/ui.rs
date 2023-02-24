@@ -1,5 +1,7 @@
-use crate::block::{block_kind, BlockColor, BlockShape};
-use crate::game::{hard_drop_pos, FieldSize, Game, FIELD_HEIGHT, FIELD_WIDTH, NEXT_BLOCKS_SIZE};
+use crate::block::BlockShape;
+use crate::game::{
+    cell, hard_drop_pos, FieldSize, Game, FIELD_HEIGHT, FIELD_WIDTH, NEXT_BLOCKS_SIZE,
+};
 use crossterm::{
     event::{self, Event},
     execute,
@@ -28,11 +30,11 @@ const BG_COLOR_TABLE: [Color; 10] = [
     Color::Rgb(255, 0, 255),   // T
 ];
 
-fn get_block(kind: BlockColor) -> (&'static str, Style) {
+fn get_block(kind: cell::Kind) -> (&'static str, Style) {
     let style = Style::default().bg(BG_COLOR_TABLE[kind]);
     match kind {
-        block_kind::NONE => ("  ", style),
-        block_kind::GHOST => ("[]", style),
+        cell::NONE => ("  ", style),
+        cell::GHOST => ("[]", style),
         _ => ("__", style),
     }
 }
@@ -107,7 +109,7 @@ impl<'a> Widget for HoldBlockWidget<'a> {
                         px,
                         py,
                         "  ",
-                        Style::default().bg(BG_COLOR_TABLE[block_kind::NONE]),
+                        Style::default().bg(BG_COLOR_TABLE[cell::NONE]),
                     ),
                 }
             }
@@ -271,15 +273,15 @@ fn draw_game<B: Backend>(f: &mut Frame<B>, layout: &GameLayout, game: &Game) {
     let ghost_pos = hard_drop_pos(&game.field, &game.pos, &game.block);
     for y in 0..4 {
         for x in 0..4 {
-            if game.block[y][x] != block_kind::NONE {
-                field_buf[y + ghost_pos.y][x + ghost_pos.x] = block_kind::GHOST;
+            if game.block[y][x] != cell::NONE {
+                field_buf[y + ghost_pos.y][x + ghost_pos.x] = cell::GHOST;
             }
         }
     }
 
     for y in 0..4 {
         for x in 0..4 {
-            if game.block[y][x] != block_kind::NONE {
+            if game.block[y][x] != cell::NONE {
                 field_buf[y + game.pos.y][x + game.pos.x] = game.block[y][x];
             }
         }

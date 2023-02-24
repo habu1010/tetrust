@@ -1,4 +1,6 @@
-use crate::block::{block_kind, block_kind::WALL as W, gen_block_7, BlockColor, BlockShape};
+pub mod cell;
+use crate::block::{gen_block_7, BlockShape};
+use cell::WALL as W;
 use std::collections::VecDeque;
 
 pub const FIELD_WIDTH: usize = 10 + 2 + 2; // フィールド横幅+壁+番兵
@@ -8,7 +10,7 @@ pub const NEXT_BLOCKS_SIZE: usize = 3;
 
 pub const SCORE_TABLE: [usize; 5] = [0, 1, 5, 25, 100];
 
-pub type FieldSize = [[BlockColor; FIELD_WIDTH]; FIELD_HEIGHT];
+pub type FieldSize = [[cell::Kind; FIELD_WIDTH]; FIELD_HEIGHT];
 
 #[derive(Clone, Copy)]
 pub struct Position {
@@ -79,7 +81,7 @@ pub fn is_collision(field: &FieldSize, pos: &Position, block: &BlockShape) -> bo
             if y + pos.y >= FIELD_HEIGHT || x + pos.x >= FIELD_WIDTH {
                 return true;
             }
-            if field[y + pos.y][x + pos.x] != block_kind::NONE && block[y][x] != block_kind::NONE {
+            if field[y + pos.y][x + pos.x] != cell::NONE && block[y][x] != cell::NONE {
                 return true;
             }
         }

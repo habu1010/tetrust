@@ -4,22 +4,7 @@ use rand::{
     thread_rng, Rng,
 };
 
-use block_kind::{I, J, L, O, S, T, Z};
-
-pub type BlockColor = usize;
-
-pub mod block_kind {
-    pub const NONE: super::BlockColor = 0;
-    pub const WALL: super::BlockColor = 1;
-    pub const GHOST: super::BlockColor = 2;
-    pub const I: super::BlockColor = 3;
-    pub const O: super::BlockColor = 4;
-    pub const S: super::BlockColor = 5;
-    pub const Z: super::BlockColor = 6;
-    pub const J: super::BlockColor = 7;
-    pub const L: super::BlockColor = 8;
-    pub const T: super::BlockColor = 9;
-}
+use crate::game::cell::{I, J, L, O, S, T, Z};
 
 // テトリミノの種類
 const BLOCK_KIND_MAX: usize = 7;
